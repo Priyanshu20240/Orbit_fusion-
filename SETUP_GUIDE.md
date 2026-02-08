@@ -25,7 +25,7 @@ python -m venv venv               # Create venv if needed
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 # Option A: With auto-reload (development)
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 # Option B: Without reload (production)
 uvicorn main:app --host 0.0.0.0 --port 8000
