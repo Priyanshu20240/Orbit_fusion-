@@ -111,7 +111,7 @@ The **Interface**.
     ```bash
     cd backend
     # Activate virtual environment
-    venv\Scripts\activate
+    venv_new\Scripts\activate
     # Run server
     # Option A: With auto-reload (development)
     uvicorn main:app --reload --host 0.0.0.0 --port 8000
