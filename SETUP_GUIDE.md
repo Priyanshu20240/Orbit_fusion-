@@ -22,7 +22,7 @@ cd backend
 .\venv_new\Scripts\Activate.ps1   # Windows PowerShell
 # OR
 python -m venv venv               # Create venv if needed
-.\venv_new\Scripts\Activate.ps1
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 # Option A: With auto-reload (development)
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
