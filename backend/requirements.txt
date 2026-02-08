@@ -1,0 +1,24 @@
+# Orbiter Fusion Platform - Backend Dependencies
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+pydantic>=2.0
+pystac-client
+rasterio
+xarray
+numpy
+requests==2.31.0
+python-multipart==0.0.6
+httpx==0.26.0
+
+# For CORS support
+# For geospatial operations
+shapely
+pyproj
+titiler.core>=0.11.0
+
+# Google Earth Engine for fusion
+earthengine-api>=0.1.370
+scipy
+Pillow
+planetary_computer
+mercantile

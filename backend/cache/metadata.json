@@ -1,0 +1,54 @@
+{
+  "82ee1eb818cf8aa3c76de5b00f8ed96b": {
+    "timestamp": "2026-02-08T04:10:48.084926",
+    "bounds": [
+      81.6448974609375,
+      26.181321125359712,
+      81.72592163085939,
+      26.22814270104532
+    ],
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "visualization": "true_color",
+    "platforms": [
+      "sentinel",
+      "landsat"
+    ],
+    "original_size": [
+      501,
+      290
+    ],
+    "full_size_bytes": 41984,
+    "thumb_size_bytes": 9474,
+    "preview_size_bytes": 1682,
+    "compression_ratio": 0.11719615785080827
+  },
+  "d22f8bc81dfbfd2db027e34ff8619932": {
+    "timestamp": "2026-02-08T04:13:50.895824",
+    "bounds": [
+      [
+        27.503399176197842,
+        85.10009765625
+      ],
+      [
+        27.916766641249065,
+        85.6109619140625
+      ]
+    ],
+    "start_date": "2024-01-01",
+    "end_date": "2024-12-31",
+    "visualization": "true_color",
+    "platforms": [
+      "sentinel",
+      "landsat"
+    ],
+    "original_size": [
+      501,
+      406
+    ],
+    "full_size_bytes": 81996,
+    "thumb_size_bytes": 15944,
+    "preview_size_bytes": 2486,
+    "compression_ratio": 0.15340433930953454
+  }
+}

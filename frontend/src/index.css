@@ -1,0 +1,871 @@
+/* ==========================================
+   ORBITER FUSION PLATFORM - Design System
+   ========================================== */
+
+:root {
+  /* Colors - Dark Theme (User Requested) */
+  --bg-primary: #000000;
+  /* Background */
+  --bg-secondary: #121212;
+  /* Land / Secondary */
+  --bg-tertiary: #1E1E1E;
+  /* Water / Tertiary */
+  --bg-card: rgba(30, 30, 30, 0.85);
+
+  /* Accent gradients */
+  --accent-primary: #3b82f6;
+  --accent-secondary: #8b5cf6;
+  --accent-success: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+
+  /* Text colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A0A0;
+  --text-muted: #6B7280;
+
+  /* Gradients */
+  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  --gradient-glow: radial-gradient(ellipse at center, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+
+  /* Borders & Shadows */
+  --border-color: #333333;
+  --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.1);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* Lighter shadow */
+
+  /* Spacing */
+  --sidebar-width: 340px;
+  --header-height: 64px;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+/* Reset & Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================
+   LAYOUT
+   ========================================== */
+
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: var(--bg-primary);
+}
+
+/* Sidebar */
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  box-shadow: var(--shadow-glow);
+}
+
+.sidebar-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(180deg, var(--bg-tertiary) 0%, transparent 100%);
+}
+
+.sidebar-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sidebar-header p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+/* Section styling */
+.section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  backdrop-filter: blur(10px);
+  transition: var(--transition-normal);
+}
+
+.card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+/* Form Controls */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  transition: var(--transition-fast);
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.btn-primary {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card);
+  border-color: var(--accent-primary);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+/* Satellite Toggle Buttons */
+.satellite-toggles {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.satellite-btn {
+  flex: 1;
+  min-width: 90px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(30, 30, 30, 0.9), rgba(15, 15, 15, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    background var(--transition-fast);
+  text-align: center;
+}
+
+.satellite-btn.active {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0.08));
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.satellite-btn:hover:not(.active) {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(180deg, rgba(35, 35, 35, 0.95), rgba(20, 20, 20, 0.98));
+}
+
+.satellite-btn span {
+  display: block;
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.satellite-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.satellite-btn:focus-visible {
+  outline: none;
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+/* Scene Results */
+.scene-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.scene-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.scene-item:hover {
+  border-color: var(--accent-primary);
+}
+
+.scene-item.selected {
+  border-color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.scene-thumbnail {
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  object-fit: cover;
+}
+
+.scene-info {
+  flex: 1;
+}
+
+.scene-date {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.scene-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.cloud-badge {
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.cloud-low {
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--accent-success);
+}
+
+.cloud-medium {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--accent-warning);
+}
+
+.cloud-high {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--accent-danger);
+}
+
+/* ==========================================
+   MAP CONTAINER
+   ========================================== */
+
+.map-container {
+  flex: 1;
+  position: relative;
+  background: var(--bg-primary);
+}
+
+.map {
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+}
+
+/* Leaflet customizations */
+.leaflet-container {
+  background: var(--bg-primary);
+  font-family: var(--font-family);
+}
+
+/* Fix for blurry satellite imagery on high-DPI screens */
+.leaflet-image-layer {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  transition: none !important;
+  /* Prevent opacity transitions causing temporary blur */
+}
+
+/* Ensure smooth zoom but crisp images */
+.leaflet-fade-anim .leaflet-tile,
+.leaflet-fade-anim .leaflet-popup {
+  will-change: opacity;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+  will-change: transform;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+/* Drawing tools - Custom Icons (Light Theme) */
+.leaflet-draw-toolbar a {
+  background: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #e0e0e0 !important;
+  background-size: 24px 24px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  display: block !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  border-radius: 8px !important;
+  margin-bottom: 5px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-draw-toolbar .leaflet-draw-toolbar-top {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+}
+
+.leaflet-draw-toolbar .leaflet-draw-toolbar-bottom {
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+}
+
+.leaflet-draw-toolbar a:hover {
+  background-color: #f3f4f6 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Rectangle Draw Icon (Blue Filled) */
+.leaflet-draw-toolbar .leaflet-draw-draw-rectangle {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzNiODJmNiI+PHJlY3QgeD0iMyIgeT0iMyIgd2lkdGg9IjE4IiBoZWlnaHQ9IjE4IiByeD0iMiIvPjwvc3ZnPg==") !important;
+  background-color: #ffffff !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 24px 24px !important;
+}
+
+/* Polygon Icon (Green Pentagon - Solid) */
+.leaflet-draw-toolbar .leaflet-draw-draw-polygon {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzEwYjk4MSI+PHBhdGggZD0iTTEyIDJMMiA5TDYgMjFIMThMMjIgOUwxMiAyWiIvPjwvc3ZnPg==") !important;
+  background-color: #ffffff !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 24px 24px !important;
+}
+
+/* Edit Icon (Yellow Pencil) */
+.leaflet-draw-toolbar .leaflet-draw-edit-edit {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZjU5ZTBiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTE3IDNhMi44MjggMi44MjggMCAxIDEgNCA0TDcuNSAyMC41IDIgMjJsMS41LTUuNUwxNyAzeiIvPjxwYXRoIGQ9Ik0xNi41IDMuNWEyLjEyMSAyLjEyMSAwIDAgMSAzIDNMNyAxOWwtNCAxIDEtNEwxNi41IDMuNXoiIGZpbGw9IiNmYmJmMjQiIHN0cm9rZT0ibm9uZSIvPjwvc3ZnPg==") !important;
+  background-color: #ffffff !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 24px 24px !important;
+}
+
+/* Delete/Remove Icon (Red Eraser - Wedge) */
+.leaflet-draw-toolbar .leaflet-draw-edit-remove {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2VmNDQ0NCI+PHBhdGggZD0iTTE2LjI0IDMuNTZsNC45NSA0Ljk1Yy43OC43OS43OCAyLjA1IDAgMi44NEwxMiAyMC41M2E0LjAwOCA0LjAwOCAwIDAgMS01LjY2IDBMMi44MSAxN2MtLjc4LS43OS0uNzgtMi4wNSAwLTIuODRsMTAuNi0xMC42Yy43OS0uNzggMi4wNS0uNzggMi44MyAwek00LjIyIDE1LjU5bDQuOTUgNC45NWMuMzkuMzkgMS4wMi4zOSAxLjQxIDBMMTIgMTkuMTJsLTYuMzYtNi4zNi0xLjQyIDEuNDJjLS4zOS4zOS0uMzkgMS4wMiAwIDEuNDF6Ii8+PC9zdmc+") !important;
+  background-color: #ffffff !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 24px 24px !important;
+}
+
+/* Circle Icon (if enabled - Purple) */
+.leaflet-draw-draw-circle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3C/svg%3E") !important;
+}
+
+/* Marker Icon (Cyan) */
+.leaflet-draw-draw-marker {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") !important;
+}
+
+.leaflet-draw-actions {
+  left: 48px !important;
+  display: block !important;
+}
+
+.leaflet-draw-actions li {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+}
+
+.leaflet-draw-actions li:first-child a {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+
+.leaflet-draw-actions li:last-child a {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.leaflet-draw-actions a {
+  background-color: #ffffff !important;
+  color: #333333 !important;
+  border: 1px solid #e0e0e0 !important;
+  line-height: 28px !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+}
+
+.leaflet-draw-actions a:hover {
+  background-color: #f3f4f6 !important;
+  color: var(--accent-primary) !important;
+}
+
+/* Map overlays */
+.map-overlay {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.map-overlay>* {
+  pointer-events: auto;
+}
+
+.coordinates-display {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.aoi-info {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aoi-info.success {
+  border-color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* Loading overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==========================================
+   SCROLLBAR
+   ========================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ==========================================
+   ANIMATIONS
+   ========================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+.dim-tiles {
+  filter: brightness(0.85) contrast(0.9);
+}
+
+/* =========================================
+   OrbitFusion Loader Styles
+   ========================================= */
+
+/* Fullscreen loader */
+.loader-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at top, #0b1220, #020617);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: #e5e7eb;
+  font-family: "Inter", sans-serif;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+  /* Allows clicks to pass through when hidden */
+}
+
+/* Container */
+.orbit-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+}
+
+/* Logo */
+.logo {
+  width: 120px;
+  height: 120px;
+  border-radius: 24px;
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  z-index: 2;
+  box-shadow: 0 0 40px rgba(56, 189, 248, 0.35);
+  animation: pulse-scale 2.5s ease-in-out infinite;
+}
+
+/* Orbits */
+.orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+}
+
+.orbit-1 {
+  animation: rotate 6s linear infinite;
+}
+
+.orbit-2 {
+  transform: rotate(60deg);
+  animation: rotateReverse 9s linear infinite;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.orbit-3 {
+  transform: rotate(120deg);
+  animation: rotate 12s linear infinite;
+  border-color: rgba(147, 51, 234, 0.35);
+}
+
+/* Text */
+.loading-text {
+  margin-top: 28px;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+  animation: fade 1.8s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotateReverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pulse-scale {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes fade {
+
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* =========================================
+   Fancy Date Picker Styles
+   ========================================= */
+
+#root .date-card {
+  background: linear-gradient(180deg,
+      rgba(15, 23, 42, 0.85),
+      rgba(2, 6, 23, 0.95));
+  padding: 18px;
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 20px 40px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+/* Group */
+.date-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.date-group:last-child {
+  margin-bottom: 0;
+}
+
+/* Label */
+.date-group label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Input */
+.date-group input[type="date"] {
+  background: rgba(2, 6, 23, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  font-family: "JetBrains Mono", monospace, var(--font-family);
+  transition: all 0.25s ease;
+  width: 100%;
+}
+
+/* Remove default styles */
+.date-group input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+/* Hover */
+.date-group input[type="date"]:hover {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+/* Focus glow - Default */
+.date-group input[type="date"]:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.6),
+    0 0 18px rgba(56, 189, 248, 0.35);
+  background: rgba(2, 6, 23, 0.95);
+}
+
+/* OrbitFusion Accent Variants */
+.date-group input[type="date"][data-type="start"]:focus {
+  border-color: #22c55e;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.45);
+}
+
+.date-group input[type="date"][data-type="end"]:focus {
+  border-color: #9333ea;
+  box-shadow: 0 0 18px rgba(147, 51, 234, 0.45);
+}
