@@ -24,7 +24,11 @@ cd backend
 python -m venv venv               # Create venv if needed
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python main.py
+# Option A: With auto-reload (development)
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Option B: Without reload (production)
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 ✅ Backend runs on `http://localhost:8000`
 
@@ -77,7 +81,11 @@ Follow the browser prompts to authorize your Earth Engine account.
 
 #### Step 5: Run Backend Server
 ```bash
-python main.py
+# Option A: With auto-reload (development)
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Option B: Without reload (production)
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 Expected output:
