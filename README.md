@@ -113,14 +113,17 @@ The **Interface**.
     # Activate virtual environment
     venv\Scripts\activate
     # Run server
-    python start.py  # or uvicorn main:app --reload
+    # Option A: With auto-reload (development)
+    uvicorn main:app --reload --host 0.0.0.0 --port 8000
     ```
+    # for production
+    uvicorn main:app --host 0.0.0.0 --port 8000
 
-2.  **Frontend**:
+3.  **Frontend**:
     ```bash
     cd frontend
     npm run dev
     ```
 
-3.  **Access**:
+4.  **Access**:
     Open `http://localhost:5173` in your browser.
