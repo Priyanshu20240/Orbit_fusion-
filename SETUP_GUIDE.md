@@ -13,7 +13,7 @@
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/Priyanshu20240/Orbit_fusion-.git
-cd orbiter-fusion
+cd orbiter-fusion-
 ```
 
 ### 2. Start Backend
