@@ -1,6 +1,8 @@
 # Orbiter Fusion Platform (ASTRAVISION) - Technical Documentation
 ## Demo
 <img width="2520" height="1664" alt="Gemini_Generated_Image_wr6v2bwr6v2bwr6v" src="https://github.com/user-attachments/assets/b3f5fd71-ea26-4064-b2d3-474cde0638ff" />
+<img width="2816" height="1536" alt="Gemini_Generated_Image_uba4oluba4oluba4" src="https://github.com/user-attachments/assets/fc21a8a4-b46f-4af8-bde5-7d204b5428a7" />
+
 
 ## 1. Project Overview
 **Orbiter Fusion** is a specialized multi-satellite data fusion dashboard. It integrates data from **Sentinel-2** (European Space Agency) and **Landsat-8/9** (NASA/USGS) to create superior fused imagery. 
@@ -45,6 +47,8 @@ Current implementation uses a **Weighted Average** approach in `fuse_collections
 ```python
 fused_rgb = s2_rgb.add(l8_rgb).divide(2)
 ```
+<img width="1024" height="1024" alt="2a62addb-7e15-443b-82f7-41d8209e3487" src="https://github.com/user-attachments/assets/af05e181-e54b-4b4a-bd1f-2d61a5f812c2" />
+
 **Explanation**:
 *   After alignment, we take the Sentinel pixel value ($S$) and Landsat pixel value ($L$) at the exact same coordinate.
 *   **Formula**: $Fusion = \frac{S + L}{2}$
