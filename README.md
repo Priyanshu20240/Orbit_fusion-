@@ -1,8 +1,6 @@
 # Orbiter Fusion Platform (ASTRAVISION) - Technical Documentation
 ## Demo
-https://github.com/user-attachments/assets"C:\Users\Asus\Downloads\WhatsApp Video 2026-04-07 at 6.28.32 PM (1).mp4"
-
-
+<img width="2520" height="1664" alt="Gemini_Generated_Image_wr6v2bwr6v2bwr6v" src="https://github.com/user-attachments/assets/b3f5fd71-ea26-4064-b2d3-474cde0638ff" />
 
 ## 1. Project Overview
 **Orbiter Fusion** is a specialized multi-satellite data fusion dashboard. It integrates data from **Sentinel-2** (European Space Agency) and **Landsat-8/9** (NASA/USGS) to create superior fused imagery. 
