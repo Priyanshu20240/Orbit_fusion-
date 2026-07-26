@@ -1,229 +1,256 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+// src/components/TimeSlider.jsx
+//
+// Phase 2 (M4) — per-scene time slider.
+//
+// The slider is a presentation on top of the `useTimeSeries` hook (M3).
+// The hook owns the per-frame loop + abort; this component owns:
+//   - the visual scrubber (thumb + ticks)
+//   - pointer drag (preview-only; no dispatch until pointerup)
+//   - keyboard navigation (←/→/space/home/end)
+//   - ARIA slider semantics + live region for the current date
+//
+// Crucially, this component does NOT add or remove a Leaflet layer.
+// The active layer is owned by `useFusion`; slider movement only
+// dispatches `TIME_SERIES_SET_CURRENT`, which the reducer (M2) maps to
+// a `LAYER_UPDATED` on the existing fusion layer — preserving the
+// `data-testid="layer-${mode}"` container across slider swaps. That's
+// the M8b + Phase 2 invariant.
 
-function TimeSlider({ scenes, selectedScene, onSceneChange, isPlaying, onPlayToggle }) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [playbackSpeed, setPlaybackSpeed] = useState(1500) // ms per frame
-  const intervalRef = useRef(null)
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useLayers, useDispatch } from "../state/AppStore.jsx";
 
-  // Sort scenes by date - Memoized to prevent re-renders
-  const sortedScenes = useMemo(() =>
-    [...(scenes || [])].sort((a, b) =>
-      new Date(a.datetime) - new Date(b.datetime)
-    ), [scenes])
+const SENSOR_COLOR = {
+    sentinel: "#06b6d4", // cyan
+    landsat:  "#ea580c", // orange
+};
 
-  // Sync currentIndex when selectedScene changes externally
-  useEffect(() => {
-    if (selectedScene && sortedScenes.length > 0 && !isPlaying) {
-      const index = sortedScenes.findIndex(s => s.id === selectedScene.id)
-      if (index !== -1 && index !== currentIndex) {
-        setCurrentIndex(index)
-      }
-    }
-  }, [selectedScene, sortedScenes, isPlaying])
+const TICK_DATE_FMT = { month: "short", day: "numeric" };
+const CURRENT_DATE_FMT = { year: "numeric", month: "long", day: "numeric" };
 
-  // Handle playback
-  useEffect(() => {
-    if (isPlaying && sortedScenes.length > 1) {
-      intervalRef.current = setInterval(() => {
-        setCurrentIndex(prev => {
-          const next = (prev + 1) % sortedScenes.length
-          return next
-        })
-      }, playbackSpeed)
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-  }, [isPlaying, sortedScenes.length, playbackSpeed])
-
-  // Notify parent when scene changes (only if playing or user interaction, prevent loop)
-  useEffect(() => {
-    // Only trigger change if the current scene in slider is different from selectedScene
-    // AND we are playing OR this effect triggered by slider change
-    if (sortedScenes[currentIndex] && onSceneChange) {
-      if (!selectedScene || sortedScenes[currentIndex].id !== selectedScene.id) {
-        onSceneChange(sortedScenes[currentIndex])
-      }
-    }
-  }, [currentIndex, sortedScenes, onSceneChange, isPlaying])
-
-  if (!sortedScenes.length) return null
-
-  const currentScene = sortedScenes[currentIndex]
-  const formatDate = (dateStr) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
-
-  return (
-    <div className="time-slider">
-      <div className="time-slider-header">
-        <span>🎬 Time-Lapse</span>
-        <span className="scene-count">{sortedScenes.length} scenes</span>
-      </div>
-
-      <div className="time-slider-controls">
-        {/* Play/Pause Button */}
-        <button
-          className="play-btn"
-          onClick={onPlayToggle}
-          title={isPlaying ? 'Pause' : 'Play'}
-        >
-          {isPlaying ? '⏸️' : '▶️'}
-        </button>
-
-        {/* Slider */}
-        <div className="slider-container">
-          <input
-            type="range"
-            min={0}
-            max={sortedScenes.length - 1}
-            value={currentIndex}
-            onChange={(e) => setCurrentIndex(parseInt(e.target.value))}
-            className="time-range"
-          />
-          <div className="time-labels">
-            <span>{formatDate(sortedScenes[0]?.datetime)}</span>
-            <span className="current-date">{formatDate(currentScene?.datetime)}</span>
-            <span>{formatDate(sortedScenes[sortedScenes.length - 1]?.datetime)}</span>
-          </div>
-        </div>
-
-        {/* Speed Control */}
-        <select
-          className="speed-select"
-          value={playbackSpeed}
-          onChange={(e) => setPlaybackSpeed(parseInt(e.target.value))}
-          title="Playback Speed"
-        >
-          <option value={2500}>0.5x</option>
-          <option value={1500}>1x</option>
-          <option value={800}>2x</option>
-          <option value={400}>4x</option>
-        </select>
-      </div>
-
-      <style>{`
-        .time-slider {
-          position: absolute;
-          bottom: 30px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 500px;
-          max-width: 80%;
-          background: rgba(19, 26, 42, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(148, 163, 184, 0.1);
-          border-radius: 12px;
-          padding: 12px 16px;
-          z-index: 1000;
-          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-        }
-
-        .time-slider-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-          font-size: 0.85rem;
-          font-weight: 600;
-          color: #f1f5f9;
-        }
-
-        .scene-count {
-          font-size: 0.75rem;
-          color: #64748b;
-          font-weight: 400;
-        }
-
-        .time-slider-controls {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        .play-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #3b82f6. 0%, #8b5cf6 100%);
-          border: none;
-          cursor: pointer;
-          font-size: 1rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: transform 0.15s ease;
-        }
-
-        .play-btn:hover {
-          transform: scale(1.1);
-        }
-
-        .slider-container {
-          flex: 1;
-        }
-
-        .time-range {
-          width: 100%;
-          height: 6px;
-          -webkit-appearance: none;
-          background: rgba(148, 163, 184, 0.2);
-          border-radius: 3px;
-          outline: none;
-        }
-
-        .time-range::-webkit-slider-thumb {
-          -webkit-appearance: none;
-          width: 16px;
-          height: 16px;
-          background: #3b82f6;
-          border-radius: 50%;
-          cursor: pointer;
-          box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-        }
-
-        .time-labels {
-          display: flex;
-          justify-content: space-between;
-          margin-top: 6px;
-          font-size: 0.65rem;
-          color: #64748b;
-        }
-
-        .current-date {
-          color: #3b82f6;
-          font-weight: 600;
-        }
-
-        .speed-select {
-          padding: 6px 10px;
-          background: rgba(28, 36, 56, 0.8);
-          border: 1px solid rgba(148, 163, 184, 0.2);
-          border-radius: 6px;
-          color: #f1f5f9;
-          font-size: 0.75rem;
-          cursor: pointer;
-        }
-
-        .speed-select:focus {
-          outline: none;
-          border-color: #3b82f6;
-        }
-      `}</style>
-    </div>
-  )
+function formatDateLabel(dateStr, opts = TICK_DATE_FMT) {
+    if (!dateStr) return "";
+    // dateStr is "YYYY-MM-DD" (the response from /api/scenes/overlap).
+    // Construct as a local date to avoid TZ shifts.
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString("en-US", opts);
 }
 
-export default TimeSlider
+export default function TimeSlider({ disabled = false }) {
+    const { timeSeries } = useLayers();
+    const dispatch = useDispatch();
+
+    const { frames, currentFrameIdx, loading, error } = timeSeries;
+    const frameCount = frames.length;
+    const current = frames[currentFrameIdx];
+
+    // Local "scrubbing" state for the drag preview — does NOT update the
+    // store. The store only changes on pointerup (or keyboard arrow).
+    const [scrubbingTo, setScrubbingTo] = useState(null);
+    const trackRef = useRef(null);
+
+    // Compute the displayed frame: either the scrubbing preview, or the
+    // committed current frame.
+    const displayed = scrubbingTo !== null ? frames[scrubbingTo] : current;
+
+    // ── pointer drag ──────────────────────────────────────────────────
+    const pickIdxFromEvent = useCallback((clientX) => {
+        const el = trackRef.current;
+        if (!el || frameCount === 0 || typeof clientX !== "number" || Number.isNaN(clientX)) return null;
+        const rect = el.getBoundingClientRect();
+        const width = rect.width || 100;
+        const left = rect.left || 0;
+        const ratio = Math.max(0, Math.min(1, (clientX - left) / width));
+        return Math.round(ratio * (frameCount - 1));
+    }, [frameCount]);
+
+    const onPointerDown = useCallback((e) => {
+        if (disabled || frameCount === 0) return;
+        e.currentTarget.setPointerCapture?.(e.pointerId);
+        const idx = pickIdxFromEvent(e.clientX);
+        if (idx !== null) setScrubbingTo(idx);
+    }, [disabled, frameCount, pickIdxFromEvent]);
+
+    const onPointerMove = useCallback((e) => {
+        if (scrubbingTo === null) return;
+        const idx = pickIdxFromEvent(e.clientX);
+        if (idx !== null) setScrubbingTo(idx);
+    }, [scrubbingTo, pickIdxFromEvent]);
+
+    const onPointerUp = useCallback((e) => {
+        if (scrubbingTo === null) return;
+        e.currentTarget.releasePointerCapture?.(e.pointerId);
+        // Commit the scrub.
+        dispatch({ type: "TIME_SERIES_SET_CURRENT", idx: scrubbingTo });
+        setScrubbingTo(null);
+    }, [scrubbingTo, dispatch]);
+
+    // ── keyboard ──────────────────────────────────────────────────────
+    const onKeyDown = useCallback((e) => {
+        if (disabled || frameCount === 0) return;
+        let next = currentFrameIdx;
+        switch (e.key) {
+            case "ArrowRight":
+                next = Math.min(frameCount - 1, currentFrameIdx + (e.shiftKey ? 5 : 1));
+                break;
+            case "ArrowLeft":
+                next = Math.max(0, currentFrameIdx - (e.shiftKey ? 5 : 1));
+                break;
+            case "Home":
+                next = 0;
+                break;
+            case "End":
+                next = frameCount - 1;
+                break;
+            default:
+                return; // not our key
+        }
+        e.preventDefault();
+        dispatch({ type: "TIME_SERIES_SET_CURRENT", idx: next });
+    }, [disabled, frameCount, currentFrameIdx, dispatch]);
+
+    // Reset scrubbing on unmount or when the underlying frames list changes
+    // (the scrubbing index may no longer be valid).
+    useEffect(() => {
+        setScrubbingTo(null);
+    }, [frames]);
+
+    // Hide entirely when there's no work to do.
+    if (frameCount === 0) {
+        if (loading) {
+            return (
+                <div className="time-slider time-slider--loading" role="status" aria-live="polite">
+                    Loading time series…
+                </div>
+            );
+        }
+        if (error) {
+            return (
+                <div className="time-slider time-slider--error" role="alert">
+                    Time series error: {error}
+                </div>
+            );
+        }
+        return null;
+    }
+
+    // Play / Pause auto-advance animation loop
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [playbackSpeed, setPlaybackSpeed] = useState(800); // ms per frame
+
+    useEffect(() => {
+        if (!isPlaying || frameCount <= 1) return;
+        const timer = setInterval(() => {
+            dispatch({
+                type: "TIME_SERIES_SET_CURRENT",
+                idx: (currentFrameIdx + 1) % frameCount,
+            });
+        }, playbackSpeed);
+        return () => clearInterval(timer);
+    }, [isPlaying, frameCount, currentFrameIdx, playbackSpeed, dispatch]);
+
+    const togglePlay = () => setIsPlaying((p) => !p);
+
+    const thumbPct = frameCount === 1
+        ? 0
+        : (currentFrameIdx / (frameCount - 1)) * 100;
+
+    return (
+        <>
+            {/* ── Floating Date & Time Overlay Badge on Map ───────────────────── */}
+            {displayed && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: "16px",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 9999,
+                        backgroundColor: "rgba(15, 23, 42, 0.85)",
+                        backdropFilter: "blur(8px)",
+                        border: "1px solid rgba(255, 255, 255, 0.15)",
+                        borderRadius: "20px",
+                        padding: "6px 18px",
+                        color: "#fff",
+                        fontFamily: "system-ui, sans-serif",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+                        pointerEvents: "none",
+                    }}
+                >
+                    <span style={{ color: "#38bdf8" }}>📅 {formatDateLabel(displayed.date, CURRENT_DATE_FMT)}</span>
+                    <span style={{ opacity: 0.4 }}>|</span>
+                    <span style={{ color: SENSOR_COLOR[displayed.sensor] || "#a855f7" }}>
+                        🛰️ {displayed.sensor?.toUpperCase()}
+                    </span>
+                    <span style={{ opacity: 0.4 }}>|</span>
+                    <span style={{ opacity: 0.8, fontSize: "12px" }}>
+                        Frame {currentFrameIdx + 1}/{frameCount}
+                    </span>
+                </div>
+            )}
+
+            <div
+                className="time-slider"
+                role="slider"
+                tabIndex={disabled ? -1 : 0}
+                aria-label="Time slider"
+                aria-valuemin={0}
+                aria-valuemax={frameCount - 1}
+                aria-valuenow={currentFrameIdx}
+                aria-valuetext={displayed ? `${formatDateLabel(displayed.date, CURRENT_DATE_FMT)}, ${displayed.sensor}` : ""}
+                onKeyDown={onKeyDown}
+            >
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+                    <button
+                        type="button"
+                        className="btn btn--secondary"
+                        style={{ padding: "4px 10px", fontSize: "13px", borderRadius: "16px" }}
+                        onClick={togglePlay}
+                        title={isPlaying ? "Pause Timelapse" : "Play Timelapse"}
+                    >
+                        {isPlaying ? "⏸️ Pause" : "▶️ Play"}
+                    </button>
+
+                    <div
+                        className="time-slider__track"
+                        ref={trackRef}
+                        onPointerDown={onPointerDown}
+                        onPointerMove={onPointerMove}
+                        onPointerUp={onPointerUp}
+                        onPointerCancel={onPointerUp}
+                        style={{ flex: 1 }}
+                    >
+                        {frames.map((f, i) => (
+                            <div
+                                key={`${f.date}-${f.sensor}-${i}`}
+                                className={`time-slider__tick time-slider__tick--${f.sensor} ${f.ready ? "is-ready" : "is-pending"}`}
+                                style={{ left: `${(i / (frameCount - 1)) * 100}%` }}
+                                title={`${formatDateLabel(f.date)} — ${f.sensor}${f.ready ? "" : " (loading…)"}`}
+                            />
+                        ))}
+                        <div
+                            className="time-slider__thumb"
+                            style={{ left: `${thumbPct}%` }}
+                        />
+                    </div>
+                </div>
+
+                <div className="time-slider__caption" aria-live="polite">
+                    <span className="time-slider__date">
+                        {displayed ? formatDateLabel(displayed.date, CURRENT_DATE_FMT) : "—"}
+                    </span>
+                    <span className="time-slider__sensor" style={{ color: displayed ? SENSOR_COLOR[displayed.sensor] : undefined }}>
+                        {displayed ? displayed.sensor : ""}
+                    </span>
+                    <span className="time-slider__count">
+                        {currentFrameIdx + 1} / {frameCount}
+                    </span>
+                </div>
+            </div>
+        </>
+    );
+}

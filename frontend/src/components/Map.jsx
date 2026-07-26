@@ -4,6 +4,11 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet-draw'
 import 'leaflet-draw/dist/leaflet.draw.css'
 import LayerControl from './LayerControl'
+import TimeSlider from './TimeSlider.jsx'
+import SwipeCompare, { COMPARE_LAYER_ID } from './SwipeCompare.jsx'
+import BasemapControl from './BasemapControl.jsx'
+import { request } from '../api/client'
+import { BASEMAP_BY_ID, DEFAULT_BASEMAP_ID } from '../config/basemaps.js'
 
 
 // Fix Leaflet default marker icons
@@ -43,12 +48,20 @@ L.drawLocal.edit.toolbar.actions.cancel.text = 'Cancel'
 L.drawLocal.edit.toolbar.buttons.remove = 'Delete layers (Select then Confirm)'
 L.drawLocal.edit.toolbar.buttons.removeDisabled = 'No layers to delete'
 
-function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, mapLayers, onLayerUpdate, scenes, isTimeLapsePlaying, onTimeLapseToggle, onTimeSliderChange, mapCenter, isDatasetMode, setIsDatasetMode }) {
+function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, mapLayers, onLayerUpdate, scenes, mapCenter, basemapId, onBasemapChange, compare, timeSeries, aiAlerts, onMapClick }) {
     const mapRef = useRef(null)
     const mapInstanceRef = useRef(null)
     const drawnItemsRef = useRef(null)
+    const basemapLayerRef = useRef(null)
+    const aiAlertsLayerRef = useRef(null)
     const tileLayersRef = useRef({}) // Store tile layers by ID
     const [coords, setCoords] = useState({ lat: 0, lng: 0 })
+    const onAoiChangeRef = useRef(onAoiChange)
+    const onMapClickRef = useRef(onMapClick)
+    useEffect(() => {
+        onAoiChangeRef.current = onAoiChange
+        onMapClickRef.current = onMapClick
+    }, [onAoiChange, onMapClick])
 
     // Initialize map
     useEffect(() => {
@@ -65,15 +78,14 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
             preferCanvas: false
         })
 
-        // Add dark tile layer (CartoDB Dark Matter)
-        // Add Light tile layer (CartoDB Positron) - "White Map"
-        // Add Light tile layer (CartoDB Positron) - "White Map"
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        // Add dynamic basemap tile layer looked up from BASEMAP_BY_ID
+        const activeBasemap = BASEMAP_BY_ID[basemapId || DEFAULT_BASEMAP_ID] || BASEMAP_BY_ID[DEFAULT_BASEMAP_ID]
+        const basemapLayer = L.tileLayer(activeBasemap.url, {
+            attribution: activeBasemap.attribution,
             subdomains: 'abcd',
-            maxZoom: 20,
-            className: 'dim-tiles' // Custom class for brightness control
+            maxZoom: activeBasemap.maxZoom || 20,
         }).addTo(map)
+        basemapLayerRef.current = basemapLayer
 
         // Initialize feature group for drawn items
         const drawnItems = new L.FeatureGroup()
@@ -117,7 +129,7 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
         const updateAoiFromDrawnItems = () => {
             const layers = drawnItems.getLayers()
             if (layers.length === 0) {
-                onAoiChange(null)
+                onAoiChangeRef.current?.(null)
             } else {
                 const group = new L.FeatureGroup(layers)
                 const bounds = group.getBounds()
@@ -142,7 +154,11 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
                 }
 
                 // Pass both bounds and geometry
-                onAoiChange({
+                onAoiChangeRef.current?.({
+                    min_lon: parseFloat(bounds.getWest().toFixed(6)),
+                    min_lat: parseFloat(bounds.getSouth().toFixed(6)),
+                    max_lon: parseFloat(bounds.getEast().toFixed(6)),
+                    max_lat: parseFloat(bounds.getNorth().toFixed(6)),
                     bounds: bounds,
                     geojson: geojson
                 })
@@ -152,7 +168,7 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
         // Handle draw start - Clear existing items for fresh start
         map.on(L.Draw.Event.DRAWSTART, () => {
             drawnItems.clearLayers()
-            onAoiChange(null)
+            onAoiChangeRef.current?.(null)
         })
 
         // Handle draw created event
@@ -174,12 +190,18 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
             updateAoiFromDrawnItems()
         })
 
-        // Track mouse position
+        // Track mouse position & map click for point inspection
         map.on('mousemove', (e) => {
             setCoords({
                 lat: e.latlng.lat.toFixed(4),
                 lng: e.latlng.lng.toFixed(4)
             })
+        })
+
+        map.on('click', (e) => {
+            if (e.latlng && onMapClickRef.current) {
+                onMapClickRef.current(e.latlng.lat, e.latlng.lng);
+            }
         })
 
         mapInstanceRef.current = map
@@ -188,7 +210,7 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
             map.remove()
             mapInstanceRef.current = null
         }
-    }, [onAoiChange])
+    }, [])
 
     // Manage satellite tile layers
     useEffect(() => {
@@ -207,6 +229,18 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
                         map.addLayer(existingLayer)
                     }
                     existingLayer.setOpacity(layer.opacity / 100)
+                    // Phase 2 (M4): if the tileUrl changed (the slider moved
+                    // → TIME_SERIES_SET_CURRENT → LAYER_UPDATED patches the
+                    // active layer's tileUrl/fusionId), swap via setUrl to
+                    // keep the data-testid container stable. Without this,
+                    // every slider scrub would remove+re-add the layer and
+                    // break the M8b click-race test.
+                    if (
+                        layer.kind === 'gee' &&
+                        existingLayer._url !== layer.tileUrl
+                    ) {
+                        existingLayer.setUrl(layer.tileUrl)
+                    }
                 } else {
                     if (map.hasLayer(existingLayer)) {
                         map.removeLayer(existingLayer)
@@ -216,50 +250,85 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
                 // Create new layer based on type
                 let leafletLayer
 
-                if (layer.type === 'imageOverlay' && layer.imageUrl && layer.bounds) {
-                    // GEE Fusion - Image Overlay at specific geographic bounds
-                    // Bounds format: [[south, west], [north, east]]
-                    leafletLayer = L.imageOverlay(layer.imageUrl, layer.bounds, {
+                if (layer.kind === 'gee' && layer.tileUrl && layer.bounds) {
+                    // M8b: GEE getMapId tile layer. Replaces the pre-M5
+                    // imageOverlay shape. GEE tiles are native to ~z14;
+                    // upsample above to match the basemap's maxZoom:20.
+                    leafletLayer = L.tileLayer(layer.tileUrl, {
+                        attribution: 'GEE Harmonized Fusion',
                         opacity: layer.opacity / 100,
-                        interactive: true,
-                        alt: layer.name || 'GEE Fusion Result'
+                        maxNativeZoom: layer.maxNativeZoom ?? 14,
+                        maxZoom: 20,
+                        tileSize: 256,
+                        detectRetina: false,
+                        zoomOffset: 0,
+                        keepBuffer: 8,
+                        updateWhenIdle: false,
+                        updateWhenZooming: false,
+                        fadeAnimation: false,
                     })
-
-                    // Auto-zoom to the image bounds
+                    // data-testid for the click-race test (vitest).
+                    // ElementWrapper doesn't see Leaflet panes, so we
+                    // stamp the *layer container* with a class — that's
+                    // the only DOM the test can read.
+                    leafletLayer.getContainer?.()?.classList?.add(
+                        `layer-${layer.mode || "fusion"}`
+                    )
+                    // Auto-zoom to the AOI bounds.
                     map.fitBounds(layer.bounds, { padding: [20, 20] })
 
-                } else if (layer.type === 'wms' && layer.tileUrl) {
-                    // WMS layer for Bhuvan
+                    // Reactive refetch on tile 4xx OR a token past its
+                    // expiry — the mapid's reactive refresh path
+                    // (design §C.3.4). The `refetching` guard prevents a
+                    // thundering herd when a whole viewport 403s.
+                    let refetching = false
+                    leafletLayer.on('tileerror', async (e) => {
+                        const status = e?.tile?.status
+                        const expired =
+                            layer.expiresAt && Date.parse(layer.expiresAt) <= Date.now()
+                        if (
+                            (status === 401 || status === 403 || status === 404 || expired) &&
+                            !refetching &&
+                            layer.fusionId
+                        ) {
+                            refetching = true
+                            try {
+                                const fresh = await request(
+                                    `/api/fusion/${layer.fusionId}/refresh-mapid`
+                                )
+                                if (fresh?.tile_url_template) {
+                                    leafletLayer.setUrl(fresh.tile_url_template)
+                                }
+                            } catch {
+                                // Refetch is best-effort; the layer keeps the
+                                // stale URL until the next reload.
+                            } finally {
+                                refetching = false
+                            }
+                        }
+                    })
+
+                } else if (layer.kind === 'wms' && layer.tileUrl) {
+                    // WMS layer for Bhuvan (P0: read-only).
                     leafletLayer = L.tileLayer.wms(layer.tileUrl.split('?')[0], {
                         layers: layer.layerId || 'india_sat',
                         format: 'image/png',
                         transparent: true,
                         attribution: 'ISRO Bhuvan',
-                        opacity: layer.opacity / 100
-                    })
-                } else if (layer.tileUrl) {
-                    // XYZ tile layer for Sentinel/Landsat
-                    let attribution = 'Sentinel-2 / ESA'
-                    if (layer.satellite === 'landsat') {
-                        attribution = 'Landsat / NASA'
-                    } else if (layer.type === 'fusion') {
-                        attribution = 'Fused Multi-Satellite Data'
-                    } else if (layer.satellite === 'gee-fusion') {
-                        attribution = 'GEE Harmonized Fusion'
-                    }
-                    leafletLayer = L.tileLayer(layer.tileUrl, {
-                        attribution: attribution,
                         opacity: layer.opacity / 100,
-                        maxZoom: 18,
-                        tileSize: 256,       // FIX 1: Lock tile size
-                        detectRetina: false, // FIX 1: Disable retina
-                        zoomOffset: 0,       // FIX 1: No zoom offset
-                        keepBuffer: 8,       // FIX 1: Large buffer
-                        updateWhenIdle: false,    // FIX 1: Prevent white flash
-                        updateWhenZooming: false, // FIX 1: Prevent blur
-                        fadeAnimation: false      // FIX 1: No fade
-
                     })
+                } else if (layer.imageUrl && layer.bounds) {
+                    // Legacy `imageOverlay` shape. M8b demotes this to
+                    // [LATER] — the post-M5 backend no longer returns
+                    // `imageUrl`. Kept here as a fallback so older saved
+                    // state still renders something, but the new path
+                    // is the `kind === 'gee'` branch above.
+                    leafletLayer = L.imageOverlay(layer.imageUrl, layer.bounds, {
+                        opacity: layer.opacity / 100,
+                        interactive: true,
+                        alt: layer.name || 'GEE Fusion Result',
+                    })
+                    map.fitBounds(layer.bounds, { padding: [20, 20] })
                 }
 
                 if (leafletLayer) {
@@ -272,6 +341,7 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
         // Remove layers that are no longer in mapLayers
         const currentLayerIds = mapLayers.map(l => l.id)
         Object.keys(tileLayersRef.current).forEach(id => {
+            if (id === COMPARE_LAYER_ID) return  // owned by the M5 effect
             if (!currentLayerIds.includes(id)) {
                 map.removeLayer(tileLayersRef.current[id])
                 delete tileLayersRef.current[id]
@@ -306,6 +376,138 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
             duration: 1.5
         })
     }, [mapCenter])
+
+    // Update active basemap tile layer dynamically when basemapId changes
+    useEffect(() => {
+        if (!mapInstanceRef.current) return
+        const map = mapInstanceRef.current
+        const conf = BASEMAP_BY_ID[basemapId || DEFAULT_BASEMAP_ID] || BASEMAP_BY_ID[DEFAULT_BASEMAP_ID]
+        if (basemapLayerRef.current && map.hasLayer(basemapLayerRef.current)) {
+            map.removeLayer(basemapLayerRef.current)
+        }
+        const newBasemap = L.tileLayer(conf.url, {
+            attribution: conf.attribution,
+            subdomains: 'abcd',
+            maxZoom: conf.maxZoom || 20,
+        }).addTo(map)
+        basemapLayerRef.current = newBasemap
+    }, [basemapId])
+
+    // ── Phase 2 (M5): the swipe compare slot B layer. ─────────────────
+    // A second L.tileLayer added on top of the active layer, with a
+    // CSS clip-path that masks everything LEFT of the divider. The
+    // divider position is `compare.dividerX` (0..1). The frame tileUrl
+    // comes from `timeSeries.frames[compare.slotB]`. When compare is
+    // disabled, the layer is removed.
+    useEffect(() => {
+        const map = mapInstanceRef.current
+        if (!map) return
+
+        const existing = tileLayersRef.current[COMPARE_LAYER_ID]
+
+        if (!compare?.enabled || !timeSeries?.frames?.length) {
+            if (existing) {
+                map.removeLayer(existing)
+                delete tileLayersRef.current[COMPARE_LAYER_ID]
+            }
+            return
+        }
+
+        const slotB = timeSeries.frames[compare.slotB]
+        if (!slotB?.tileUrl) {
+            // The slot B frame hasn't been minted yet (the per-frame loop
+            // is still running). Don't add a broken tile layer.
+            if (existing) {
+                map.removeLayer(existing)
+                delete tileLayersRef.current[COMPARE_LAYER_ID]
+            }
+            return
+        }
+
+        const clipPct = (compare.dividerX ?? 0.5) * 100
+        if (existing) {
+            // The URL may have changed (the slider moved slot B).
+            if (existing._url !== slotB.tileUrl) {
+                existing.setUrl(slotB.tileUrl)
+            }
+            // Apply the clip-path to the layer container.
+            const container = existing.getContainer?.()
+            if (container) {
+                container.style.clipPath = `inset(0 0 0 ${clipPct}%)`
+                container.style.webkitClipPath = `inset(0 0 0 ${clipPct}%)`
+            }
+        } else {
+            const ll = L.tileLayer(slotB.tileUrl, {
+                attribution: "GEE Compare (slot B)",
+                opacity: 1.0,
+                maxNativeZoom: 14,
+                maxZoom: 20,
+                tileSize: 256,
+                detectRetina: false,
+                zoomOffset: 0,
+                keepBuffer: 8,
+                updateWhenIdle: false,
+                updateWhenZooming: false,
+                fadeAnimation: false,
+            })
+            ll.addTo(map)
+            tileLayersRef.current[COMPARE_LAYER_ID] = ll
+            // Apply the clip-path on the next paint so the container exists.
+            requestAnimationFrame(() => {
+                const container = ll.getContainer?.()
+                if (container) {
+                    container.style.clipPath = `inset(0 0 0 ${clipPct}%)`
+                    container.style.webkitClipPath = `inset(0 0 0 ${clipPct}%)`
+                }
+            })
+        }
+    }, [compare?.enabled, compare?.slotB, compare?.dividerX, timeSeries?.frames])
+
+    // Render ASTRA-AI Alert Markers & Warning Polygons
+    useEffect(() => {
+        const map = mapInstanceRef.current
+        if (!map) return
+
+        if (!aiAlertsLayerRef.current) {
+            aiAlertsLayerRef.current = L.layerGroup().addTo(map)
+        }
+        const layerGroup = aiAlertsLayerRef.current
+        layerGroup.clearLayers()
+
+        if (!aiAlerts) return
+
+        // 1. Draw alert pins
+        if (aiAlerts.pins && aiAlerts.pins.length) {
+            aiAlerts.pins.forEach((pin) => {
+                const color = pin.type === "water_loss" ? "#0284c7" : pin.type === "heat_island" ? "#f97316" : "#ef4444"
+                const iconHtml = `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 10px ${color}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;">🚨</div>`
+                const customIcon = L.divIcon({
+                    html: iconHtml,
+                    className: "ai-alert-pin",
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                })
+                const marker = L.marker([pin.lat, pin.lon], { icon: customIcon })
+                marker.bindPopup(`<b>${pin.label}</b><br/>Area: ${pin.area_ha} hectares<br/>GPS: ${pin.lat}, ${pin.lon}`)
+                layerGroup.addLayer(marker)
+            })
+        }
+
+        // 2. Draw alert polygons
+        if (aiAlerts.polygons && aiAlerts.polygons.length) {
+            aiAlerts.polygons.forEach((poly) => {
+                const latLngs = poly.coordinates.map(([lon, lat]) => [lat, lon])
+                const polygon = L.polygon(latLngs, {
+                    color: poly.color || "#ef4444",
+                    weight: 3,
+                    dashArray: "6, 6",
+                    fillOpacity: 0.25,
+                })
+                polygon.bindPopup(`<b>${poly.label}</b>`)
+                layerGroup.addLayer(polygon)
+            })
+        }
+    }, [aiAlerts])
 
     // Layer control handlers
     const handleToggleLayer = useCallback((layerId) => {
@@ -384,10 +586,30 @@ function Map({ aoi, onAoiChange, selectedScene, activeSatellites, isLoading, map
                 Lat: {coords.lat}° | Lng: {coords.lng}°
             </div>
 
+            {/* Compact Map Basemap Selector Box */}
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: "14px",
+                    right: "14px",
+                    zIndex: 1000,
+                    background: "rgba(15, 23, 42, 0.9)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(148, 163, 184, 0.2)",
+                    borderRadius: "8px",
+                    padding: "4px",
+                }}
+            >
+                <BasemapControl
+                    value={basemapId || "dark"}
+                    onChange={(id) => onBasemapChange?.(id)}
+                />
+            </div>
 
-
-            {/* Time Slider */}
-
+            {/* Time Slider (Phase 2) */}
+            <TimeSlider />
+            {/* Swipe compare overlay (Phase 2 M5) — divider + badges. */}
+            <SwipeCompare />
         </div>
     )
 }

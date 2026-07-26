@@ -190,13 +190,14 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 12px 20px;
-  font-size: 0.9rem;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
   font-weight: 600;
-  border-radius: 10px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
+  box-sizing: border-box;
   transition: var(--transition-fast);
 }
 
@@ -224,6 +225,7 @@ body {
 
 .btn-block {
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* Satellite Toggle Buttons */
@@ -380,16 +382,8 @@ body {
   font-family: var(--font-family);
 }
 
-/* Fix for blurry satellite imagery on high-DPI screens */
-.leaflet-image-layer {
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
-  transition: none !important;
-  /* Prevent opacity transitions causing temporary blur */
-}
-
-/* Ensure smooth zoom but crisp images */
+/* M8b: the pre-getMapId `pixelated` image-rendering hack for the
+   downloaded PNG is gone — real GEE tiles must render normally. */
 .leaflet-fade-anim .leaflet-tile,
 .leaflet-fade-anim .leaflet-popup {
   will-change: opacity;
@@ -419,16 +413,16 @@ body {
   background: #ffffff !important;
   color: #333333 !important;
   border: 1px solid #e0e0e0 !important;
-  background-size: 24px 24px !important;
+  background-size: 16px 16px !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
   display: block !important;
-  width: 44px !important;
-  height: 44px !important;
-  line-height: 44px !important;
-  border-radius: 8px !important;
-  margin-bottom: 5px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  border-radius: 6px !important;
+  margin-bottom: 4px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
   transition: all 0.2s ease !important;
 }
 
@@ -543,32 +537,32 @@ body {
 
 .coordinates-display {
   position: absolute;
-  bottom: 20px;
-  left: 20px;
+  bottom: 14px;
+  left: 14px;
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
 }
 
 .aoi-info {
   position: absolute;
-  top: 20px;
+  top: 14px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-card);
   backdrop-filter: blur(10px);
-  padding: 12px 20px;
-  border-radius: 10px;
-  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.76rem;
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .aoi-info.success {
@@ -662,9 +656,9 @@ body {
   animation: pulse 2s infinite;
 }
 
-.dim-tiles {
-  filter: brightness(0.85) contrast(0.9);
-}
+/* M8b: the pre-getMapId `.dim-tiles` brightness hack is gone; the
+   dark/light/satellite basemap switcher lives in src/config/basemaps.js
+   and renders each basemap at its native brightness. */
 
 /* =========================================
    OrbitFusion Loader Styles
@@ -869,3 +863,571 @@ body {
   border-color: #9333ea;
   box-shadow: 0 0 18px rgba(147, 51, 234, 0.45);
 }
+
+/* M9 DateRangePicker extras (replaces the old inline <style> block). */
+.date-presets {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.date-preset {
+  flex: 1;
+  padding: 6px 8px;
+  background: rgba(2, 6, 23, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.date-preset:hover,
+.date-preset:focus-visible {
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.date-error {
+  margin-top: 8px;
+  color: var(--accent-danger);
+  font-size: 0.75rem;
+}
+
+/* =========================================
+   M9 Loader (full-screen overlay + bar)
+   ========================================= */
+
+.loader-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.loader-orbit {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.loader-orbit__core {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  background: #0f172a;
+  color: white;
+  border-radius: 16px;
+  z-index: 2;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.35);
+  animation: pulse-scale 2.5s ease-in-out infinite;
+}
+
+.loader-orbit__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.2);
+}
+
+.loader-orbit__ring--1 { animation: rotate 6s linear infinite; }
+.loader-orbit__ring--2 { transform: rotate(60deg); animation: rotateReverse 9s linear infinite; border-color: rgba(34, 197, 94, 0.35); }
+.loader-orbit__ring--3 { transform: rotate(120deg); animation: rotate 12s linear infinite; border-color: rgba(147, 51, 234, 0.35); }
+
+.loader-bar {
+  width: min(280px, 70vw);
+  height: 3px;
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.loader-bar__fill {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #38bdf8, #8b5cf6, transparent);
+  animation: loader-slide 1.4s linear infinite;
+}
+
+@keyframes loader-slide {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(250%); }
+}
+
+.loader-text {
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  opacity: 0.85;
+  animation: fade 1.8s ease-in-out infinite;
+}
+
+.loader-screen.is-fading { opacity: 0; }
+
+/* =========================================
+   M9 Toast (in-DOM error/success surface)
+   ========================================= */
+
+.toast-host {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(420px, 90vw);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-left-width: 4px;
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast--info    { border-left-color: var(--accent-primary); }
+.toast--success { border-left-color: var(--accent-success); }
+.toast--error   { border-left-color: var(--accent-danger); }
+
+.toast__icon { font-size: 1.1rem; line-height: 1.2; }
+.toast__text { flex: 1; line-height: 1.35; }
+.toast__close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.toast__close:hover,
+.toast__close:focus-visible { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* =========================================
+   M9 ModeSelector (replaces hardcoded buttons)
+   ========================================= */
+
+.mode-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mode-selector-wrap { margin-top: 4px; width: 100%; box-sizing: border-box; }
+
+.viz-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  text-align: left;
+  transition: border-color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
+}
+
+.viz-btn:hover:not(.viz-btn--disabled) {
+  border-color: var(--accent-primary);
+  transform: translateY(-1px);
+}
+
+.viz-btn--selected {
+  background: linear-gradient(135deg, var(--accent-from, #3b82f6), var(--accent-to, #8b5cf6));
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+}
+
+.viz-btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.viz-btn__icon { font-size: 1.2rem; }
+.viz-btn__label { display: flex; flex-direction: column; line-height: 1.15; }
+.viz-btn__title { font-weight: 600; }
+.viz-btn__sub { font-size: 0.7rem; opacity: 0.7; }
+
+/* =========================================
+   M9 BasemapControl
+   ========================================= */
+
+.basemap-control {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.basemap-btn {
+  flex: 1;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.basemap-btn:hover { color: var(--text-primary); background: rgba(255,255,255,0.08); }
+.basemap-btn--selected {
+  background: #38bdf8;
+  color: #0f172a;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.35);
+}
+
+/* =========================================
+   M9 IndexLegend
+   ========================================= */
+
+.index-legend {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.index-legend__title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.index-legend__bar {
+  height: 10px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.index-legend__scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-family: "JetBrains Mono", monospace, var(--font-family);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* =========================================
+   M9 Sidebar (results + buttons block)
+   ========================================= */
+
+.btn-search { margin: 12px 0 16px; }
+.btn-merge { margin-bottom: 12px; padding: 14px; font-size: 1rem; font-weight: 600;
+  background: linear-gradient(135deg, #4CAF50, #2196F3); border: none; }
+.btn-merge:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.results-fusion { margin-bottom: 16px; }
+
+.results-bhuvan { margin-bottom: 16px; }
+.results-bhuvan__title {
+  font-size: 0.8rem; font-weight: 600; color: var(--accent-warning); margin-bottom: 8px;
+}
+
+.scene-thumbnail--bhuvan {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; background: var(--bg-secondary);
+}
+
+.cloud-badge--bhuvan { background: rgba(245, 158, 11, 0.2); color: var(--accent-warning); }
+
+.form-group--relative { position: relative; }
+.form-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
+
+.card__title { font-weight: 600; margin-bottom: 8px; }
+.card__meta { font-size: 0.85rem; color: var(--text-secondary); }
+.card__hint { font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; }
+.card__download { margin-top: 8px; text-decoration: none; }
+
+/* =========================================
+   M9 LayerControl (config-driven)
+   ========================================= */
+
+.layer-control {
+  position: absolute;
+  top: 80px;
+  right: 20px;
+  width: 280px;
+  background: rgba(19, 26, 42, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 12px;
+  z-index: 1000;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.layer-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(28, 36, 56, 0.8);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  border: none;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  width: 100%;
+  text-align: left;
+}
+.layer-control-header:hover { background: rgba(28, 36, 56, 1); }
+.layer-control-icon { font-size: 0.7rem; color: #64748b; }
+
+.layer-control-content { padding: 8px; max-height: 300px; overflow-y: auto; }
+
+.layer-item {
+  background: rgba(28, 36, 56, 0.6);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.layer-item:last-child { margin-bottom: 0; }
+
+.layer-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.layer-checkbox { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.layer-checkbox input { width: 16px; height: 16px; accent-color: #3b82f6; }
+.layer-name { font-size: 0.8rem; color: #f1f5f9; }
+
+.layer-remove-btn {
+  background: transparent; border: none; color: #64748b; cursor: pointer;
+  font-size: 0.8rem; padding: 4px; border-radius: 4px;
+  transition: all var(--transition-fast);
+}
+.layer-remove-btn:hover { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.layer-opacity { display: flex; align-items: center; gap: 8px; }
+.opacity-label { font-size: 0.7rem; color: #64748b; width: 50px; }
+.opacity-slider {
+  flex: 1; height: 4px; -webkit-appearance: none;
+  background: rgba(148, 163, 184, 0.2); border-radius: 2px; outline: none;
+}
+.opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px;
+  background: #3b82f6; border-radius: 50%; cursor: pointer;
+}
+.opacity-value { font-size: 0.7rem; color: #94a3b8; width: 35px; text-align: right; }
+
+.layer-type { margin-top: 6px; }
+.layer-badge {
+  font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 600;
+}
+.layer-badge--gee { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.layer-badge--wms { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.layer-badge--layer { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+/* =========================================
+   A11y baseline (M9.13)
+   ========================================= */
+
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+[role="radio"]:focus-visible,
+[role="radiogroup"]:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ==========================================
+   PHASE 2 — Time Slider + Swipe Compare
+   ========================================== */
+
+/* The TimeSlider is mounted at the bottom of the map, full width, on a
+   translucent strip so it doesn't obscure the basemap attribution. */
+.time-slider {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  z-index: 1000;
+  user-select: none;
+  font-size: 0.8rem;
+  backdrop-filter: blur(6px);
+}
+
+.time-slider--loading,
+.time-slider--error {
+  text-align: center;
+  padding: 12px;
+}
+.time-slider--error { color: var(--accent-danger); }
+
+.time-slider:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.time-slider__track {
+  position: relative;
+  height: 22px;
+  margin: 4px 0 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.time-slider__tick {
+  position: absolute;
+  top: 8px;
+  width: 2px;
+  height: 8px;
+  border-radius: 1px;
+  transform: translateX(-50%);
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+.time-slider__tick.is-pending { opacity: 0.25; }
+.time-slider__tick--sentinel { background: #06b6d4; }
+.time-slider__tick--landsat  { background: #ea580c; }
+
+.time-slider__thumb {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 22px;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  border-radius: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  pointer-events: none;
+}
+
+.time-slider__caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+.time-slider__date {
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.time-slider__sensor {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+}
+.time-slider__count {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── Swipe compare (M5) ─────────────────────────────────────────── */
+.swipe-compare {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+}
+.swipe-compare__layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.swipe-compare__divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text-primary);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+  cursor: ew-resize;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+.swipe-compare__divider:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+.swipe-compare__badge {
+  position: absolute;
+  top: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+}
+.swipe-compare__badge--a { left: 12px; }
+.swipe-compare__badge--b { right: 12px; }
+

@@ -1,46 +1,50 @@
-import React, { useEffect, useState } from 'react';
+// src/components/Loader.jsx
+//
+// M9 — replaces the M8a bouncing-logo-only loader with a full-screen
+// overlay that includes an indeterminate progress bar (CSS keyframe).
+// Why: the GEE request can take 5–20s. A spinning logo without a
+// progress affordance reads as "stuck". The bar doesn't claim a
+// percentage — just signals "still working" — but the human eye
+// reads it as progress because the bar moves linearly.
 
-const Loader = ({ isLoading }) => {
+import { useEffect, useState } from "react";
+
+export default function Loader({ isLoading }) {
     const [shouldRender, setShouldRender] = useState(isLoading);
 
     useEffect(() => {
         if (isLoading) {
             setShouldRender(true);
-        } else {
-            // Delay unmounting for fade-out animation
-            const timer = setTimeout(() => {
-                setShouldRender(false);
-            }, 600);
-            return () => clearTimeout(timer);
+            return;
         }
+        // Delay unmount for fade-out animation.
+        const t = setTimeout(() => setShouldRender(false), 350);
+        return () => clearTimeout(t);
     }, [isLoading]);
 
     if (!shouldRender) return null;
 
     return (
-        <div className="loader-screen" style={{ opacity: isLoading ? 1 : 0 }}>
-            <div className="orbit-container">
-                {/* Replaced image with a CSS-styled placeholder if no image exists, 
-                    or use a generic satellite emoji for now as requested 'replace with your image path' */}
-                <div className="logo" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '4rem',
-                    background: '#0f172a',
-                    color: 'white'
-                }}>
-                    🛰️
+        <div
+            className={`loader-screen ${isLoading ? "is-loading" : "is-fading"}`}
+            aria-live="polite"
+            aria-busy={isLoading}
+            role="status"
+        >
+            <div className="loader-stack">
+                <div className="loader-orbit" aria-hidden="true">
+                    <div className="loader-orbit__core">🛰️</div>
+                    <div className="loader-orbit__ring loader-orbit__ring--1" />
+                    <div className="loader-orbit__ring loader-orbit__ring--2" />
+                    <div className="loader-orbit__ring loader-orbit__ring--3" />
                 </div>
 
-                <div className="orbit orbit-1"></div>
-                <div className="orbit orbit-2"></div>
-                <div className="orbit orbit-3"></div>
-            </div>
+                <div className="loader-bar" aria-hidden="true">
+                    <div className="loader-bar__fill" />
+                </div>
 
-            <p className="loading-text">Loading satellite data...</p>
+                <p className="loader-text">Loading satellite data…</p>
+            </div>
         </div>
     );
-};
-
-export default Loader;
+}

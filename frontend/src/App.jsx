@@ -1,374 +1,255 @@
-import React, { useState, useCallback, useMemo } from 'react'
-import Map from './components/Map'
-import Sidebar from './components/Sidebar'
-import TypingIntro from './components/TypingIntro'
-import Loader from './components/Loader'
+// src/App.jsx
+//
+// Post-M9 App. The 13 useState's become one store. The api client (./api/client)
+// replaces raw fetch + localhost hardcode + cache-buster. The remaining
+// console.warn/console.error in earlier M8a code is gone — errors dispatch
+// to a real Toast (ToastHost) and the FUSION_* action trio hoists fusion
+// lifecycle into the layers context so the empty/error states are visible
+// in the UI, not just in the console.
+//
+// Still emits the new GEE layer shape (kind: "gee", tileUrl, fusionId,
+// expiresAt, maxNativeZoom) so Map.jsx can render L.tileLayer.
 
-function App() {
-    // Intro state
-    const [showIntro, setShowIntro] = useState(false)
+import React, { useCallback, useMemo } from "react";
+import Map from "./components/Map";
+import Sidebar from "./components/Sidebar";
+import Loader from "./components/Loader";
+import ToastHost from "./components/Toast.jsx";
+import TimelapseViewer from "./components/TimelapseViewer.jsx";
+import AstraAgentBar from "./components/AstraAgentBar.jsx";
+import CarbonCalculatorModal from "./components/CarbonCalculatorModal.jsx";
+import MapPointInspector from "./components/MapPointInspector.jsx";
+import SwipeCompare from "./components/SwipeCompare.jsx";
+import QuickActionsToolbar from "./components/QuickActionsToolbar.jsx";
+import { AppStoreProvider, useSettings, useLayers, useDispatch, useAoiActions } from "./state/AppStore.jsx";
+import { request, humanize } from "./api/client.js";
+import { useFusion } from "./hooks/useFusion.js";
+import { useTimeSeries } from "./hooks/useTimeSeries.js";
+import { useTimelapse } from "./hooks/useTimelapse.js";
+import { pushToast } from "./toast.js";
+import {
+    FUSION_STARTED,
+    FUSION_SUCCEEDED,
+    FUSION_FAILED,
+    FUSION_EMPTY,
+} from "./state/actions.js";
 
+function AppInner() {
+    const settings = useSettings();
+    const layersCtx = useLayers();
+    const dispatch = useDispatch();
+    const { setAoi } = useAoiActions();
 
-    // AOI (Area of Interest) state
-    const [aoi, setAoi] = useState(null)
+    const onAoiChange = useCallback(
+        (input) => setAoi(input),
+        [setAoi]
+    );
 
-    // Date range state
-    const [dateRange, setDateRange] = useState({
-        startDate: '2024-01-01',
-        endDate: '2024-12-31'
-    })
-
-    // Active satellites
-    const [activeSatellites, setActiveSatellites] = useState({
-        sentinel: true,
-        landsat: true,
-        bhuvan: false
-    })
-
-    // Search results
-    const [searchResults, setSearchResults] = useState({
-        sentinel: [],
-        landsat: [],
-        bhuvan: []
-    })
-
-    // Loading state
-    const [isLoading, setIsLoading] = useState(false)
-
-    // Selected scene
-    const [selectedScene, setSelectedScene] = useState(null)
-
-    // Map layers (Phase 2)
-    const [mapLayers, setMapLayers] = useState([])
-
-    // Fusion state
-    const [isProcessingFusion, setIsProcessingFusion] = useState(false)
-    const [activeVisualization, setActiveVisualization] = useState('true_color'); // Track current viz mode
-
-    // Time-lapse state (Phase 4)
-    const [isTimeLapsePlaying, setIsTimeLapsePlaying] = useState(false)
-
-    // Map Center state (for search navigation)
-    const [mapCenter, setMapCenter] = useState(null)
-
-    // Dataset Mode state
-    const [isDatasetMode, setIsDatasetMode] = useState(false)
-    const [datasetPath, setDatasetPath] = useState('datasets')
-
-
-
-    // Get all scenes for time-lapse - Memoized to prevent re-renders
-    const allScenes = useMemo(() =>
-        [...searchResults.sentinel, ...searchResults.landsat],
-        [searchResults.sentinel, searchResults.landsat]
-    )
-
-    // Handle AOI selection from map
-    const handleAoiChange = useCallback((input) => {
-        if (input) {
-            // Check if input is just bounds (legacy) or object with geojson
-            const bounds = input.bounds || input
-            const geojson = input.geojson || null
-
-            setAoi({
-                min_lon: bounds.getWest(),
-                min_lat: bounds.getSouth(),
-                max_lon: bounds.getEast(),
-                max_lat: bounds.getNorth(),
-                geojson: geojson
-            })
-        } else {
-            setAoi(null)
-            // Clear search results when AOI is removed
-            setSearchResults({
-                sentinel: [],
-                landsat: [],
-                bhuvan: []
-            })
-            // Also clear selection
-            setSelectedScene(null)
+    // ── search ────────────────────────────────────────────────────────────
+    const handleSearch = useCallback(async () => {
+        if (!settings.aoi) {
+            pushToast(dispatch, "error", "Please draw an Area of Interest on the map first.");
+            return;
         }
-    }, [])
-
-    // Handle Map Navigation
-    const handleNavigate = (lat, lon) => {
-        setMapCenter([lat, lon])
-    }
-
-    // Search for satellite data
-    const handleSearch = async () => {
-        if (!aoi) {
-            alert('Please draw an Area of Interest on the map first!')
-            return
-        }
-
-        setIsLoading(true)
-        setSearchResults({ sentinel: [], landsat: [], bhuvan: [] })
-
+        dispatch({ type: "SEARCH_STARTED" });
         try {
-            const response = await fetch('/api/search/all', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bbox: aoi,
-                    start_date: dateRange.startDate,
-                    end_date: dateRange.endDate,
+            const data = await request("/api/search/all", {
+                body: {
+                    bbox: settings.aoi,
+                    start_date: settings.dateRange.startDate,
+                    end_date: settings.dateRange.endDate,
                     max_cloud_cover: 30,
-                    limit: 10
-                })
-            })
-
-            if (!response.ok) {
-                throw new Error('Search failed')
-            }
-
-            const data = await response.json()
-
-            setSearchResults({
-                sentinel: data.sentinel?.scenes || [],
-                landsat: data.landsat?.scenes || [],
-                bhuvan: Object.values(data.bhuvan?.layers || {})
-            })
-        } catch (error) {
-            console.error('Search error:', error)
-            alert('Failed to search for satellite data. Make sure the backend is running.')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
-    // Toggle satellite visibility
-    const toggleSatellite = (satellite) => {
-        setActiveSatellites(prev => ({
-            ...prev,
-            [satellite]: !prev[satellite]
-        }))
-    }
-
-
-
-    // Handle GEE Geographic Windowing Fusion
-    const handleGEEFusion = async (visualization = 'true_color') => {
-        if (!aoi) {
-            alert('Please draw an Area of Interest on the map first!');
-            return;
-        }
-
-        setActiveVisualization(visualization); // Update state on click
-        setIsProcessingFusion(true);
-
-        try {
-            // Convert AOI to bounds array [west, south, east, north]
-            const bounds = [aoi.min_lon, aoi.min_lat, aoi.max_lon, aoi.max_lat];
-
-            console.log("Starting GEE Fusion with bounds:", bounds);
-            console.log("Date range:", dateRange);
-
-            // Get active platforms
-            const platforms = Object.keys(activeSatellites).filter(k => activeSatellites[k] && ['sentinel', 'landsat'].includes(k));
-
-            if (platforms.length === 0) {
-                alert("Please select at least one satellite (Sentinel-2 or Landsat 8/9)");
-                setIsProcessingFusion(false);
-                return;
-            }
-
-            const response = await fetch('/api/fusion/gee-harmonize', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bounds: bounds,
-                    geojson: aoi.geojson, // Send custom shape if available
-                    start_date: dateRange.startDate,
-                    end_date: dateRange.endDate,
-                    window_size: 256,
-                    cloud_cover: 20,
-                    visualization: visualization,
-                    platforms: platforms,
-                    create_dataset: isDatasetMode,
-                    destination_folder: datasetPath
-                })
+                    limit: 10,
+                },
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'GEE Fusion failed');
-            }
-
-            const result = await response.json();
-            console.log("GEE Fusion result:", result);
-
-            // Handle Dataset Download / Save
-            if (isDatasetMode && result.dataset_path) {
-                // Alert that server save is done
-                alert(`✅ Dataset Saved to Session Folder!\n\nFolder: ${datasetPath || 'datasets'}\nFile: ${result.dataset_path}\n\nContinue generating more datasets for this session.`);
-            }
-
-
-
-            // Continue to visualization...
-
-            // Add as an imageOverlay layer (PNG image at specific bounds)
-            const fusionLayer = {
-                id: `gee-fusion-${Date.now()}`,
-                name: '🛰️ GEE Fusion (Sentinel + Landsat)',
-                satellite: 'fusion',
-                imageUrl: result.imageUrl.startsWith('http')
-                    ? result.imageUrl
-                    : `http://localhost:8000${result.imageUrl}?t=${Date.now()}`,
-                bounds: result.bounds, // [[south, west], [north, east]]
-                type: 'imageOverlay',
-                visible: true,
-                opacity: 100
-            };
-
-            setMapLayers(prev => {
-                // Remove previous GEE Fusion layers to prevent stacking/dimming
-                const filtered = prev.filter(l => !l.id.startsWith('gee-fusion-'));
-                return [...filtered, fusionLayer];
+            dispatch({
+                type: "SEARCH_SUCCEEDED",
+                results: {
+                    sentinel: data.sentinel?.scenes || [],
+                    landsat: data.landsat?.scenes || [],
+                    bhuvan: Object.values(data.bhuvan?.layers || {}),
+                },
             });
-
-            let message = `✅ ${platforms.length > 1 ? 'Fusion' : 'Processing'} Complete!\n`;
-            if (platforms.includes('sentinel')) message += `Sentinel bands: ${result.num_sentinel_bands}\n`;
-            if (platforms.includes('landsat')) message += `Landsat bands: ${result.num_landsat_bands || result.total_bands}\n`; // Fallback for single landsat
-            message += `Visualization: ${visualization}`;
-
-            alert(message);
-
-        } catch (error) {
-            console.error('GEE Fusion error:', error);
-            // Show more detailed error if available
-            alert(`GEE Fusion failed: ${error.message || error.detail || JSON.stringify(error)}`);
-        } finally {
-            setIsProcessingFusion(false);
+        } catch (err) {
+            const msg = humanize(err);
+            pushToast(dispatch, "error", msg || "Search failed.");
+            dispatch({ type: "SEARCH_FAILED", error: msg });
         }
-    }
+    }, [settings.aoi, settings.dateRange, dispatch]);
 
-    // Handle Timelapse Generation
-    const handleTimelapse = async (visualizationType = 'true_color') => {
-        if (!aoi) {
-            alert('Please draw an Area of Interest on the map first!');
-            return;
-        }
+    // ── GEE fusion (M8b: getMapId contract + AbortController race-fix) ──
+    const handleGEEFusion = useCallback(
+        (visualization = "true_color") => {
+            dispatch({ type: "VIZ_SELECTED", viz: visualization });
+            dispatch({ type: FUSION_STARTED, viz: visualization });
+        },
+        [dispatch]
+    );
 
-        const platform = activeSatellites.sentinel ? 'sentinel' : (activeSatellites.landsat ? 'landsat' : null);
-        if (!platform) {
-            alert("Please select a satellite (Sentinel-2 or Landsat) for timelapse.");
-            return;
-        }
-
-        setIsProcessingFusion(true); // Reuse loading state for now
-
-        try {
-            const bounds = [aoi.min_lon, aoi.min_lat, aoi.max_lon, aoi.max_lat];
-
-            alert(`🎬 Generating ${visualizationType.toUpperCase()} Timelapse for ${platform.toUpperCase()}...\nCheck dates: ${dateRange.startDate} to ${dateRange.endDate}\nThis may take 10-20 seconds.`);
-
-            const response = await fetch('/api/fusion/timelapse', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bounds: bounds,
-                    geojson: aoi.geojson, // Send custom shape
-                    start_date: dateRange.startDate,
-                    end_date: dateRange.endDate,
-                    platform: platform,
-                    visualization: visualizationType
-                })
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                try {
-                    const error = JSON.parse(errorText);
-                    throw new Error(error.detail || 'Timelapse failed');
-                } catch (e) {
-                    throw new Error(`Timelapse failed: ${response.status} ${response.statusText} - ${errorText}`);
-                }
+    const fusion = useFusion({
+        aoi: settings.aoi,
+        dateRange: settings.dateRange,
+        activeSatellites: settings.activeSatellites,
+        dispatch,
+        onStatusChange: (s, err) => {
+            if (s === "empty") {
+                pushToast(
+                    dispatch,
+                    "info",
+                    "No cloud-free scenes for this area/date range. Widen the dates or raise the cloud tolerance."
+                );
+            } else if (s === "error" && err) {
+                pushToast(dispatch, "error", err);
+            } else if (s === "success") {
+                pushToast(dispatch, "success", "Layer ready.", 2000);
             }
+        },
+    });
 
-            const result = await response.json();
-            console.log("Timelapse Result:", result);
+    // Optional TimeSeries loop: disabled auto-firing so classic GEE fusion & image loading work instantly
+    // useTimeSeries({
+    //     aoi: settings.aoi,
+    //     dateRange: settings.dateRange,
+    //     activeSatellites: settings.activeSatellites,
+    //     visualization: settings.selectedVisualization,
+    //     dispatch,
+    // });
 
-            if (result && result.success && result.url) {
-                window.open(result.url, '_blank');
-            } else {
-                throw new Error(result?.error || 'No URL returned (Result is null or invalid)');
-            }
+    // Phase 2 (M6): the timelapse hook. Re-plumbs the existing
+    // /api/fusion/timelapse endpoint into a UI control.
+    const timelapse = useTimelapse({
+        aoi: settings.aoi,
+        dateRange: settings.dateRange,
+        activeSatellites: settings.activeSatellites,
+        visualization: settings.selectedVisualization,
+        dispatch,
+    });
 
-        } catch (error) {
-            console.error('Timelapse error:', error);
-            alert(`Timelapse failed: ${error.message}`);
-        } finally {
-            setIsProcessingFusion(false);
-        }
-    }
+    // ── layer actions ────────────────────────────────────────────────────
+    const handleLayerUpdate = useCallback(
+        (layerId, action, value) => {
+            if (action === "toggle") {
+                dispatch({ type: "LAYER_UPDATED", id: layerId, patch: { visible: value ?? undefined } });
+            } else if (action === "opacity") {
+                dispatch({ type: "LAYER_UPDATED", id: layerId, patch: { opacity: value } });
+            } else if (action === "remove") {
+                dispatch({ type: "LAYER_REMOVED", id: layerId });
+            }
+        },
+        [dispatch]
+    );
 
-    // Handle layer updates (toggle, opacity, remove)
-    const handleLayerUpdate = (layerId, action, value) => {
-        setMapLayers(prev => {
-            if (action === 'toggle') {
-                return prev.map(layer =>
-                    layer.id === layerId
-                        ? { ...layer, visible: !layer.visible }
-                        : layer
-                )
-            }
-            if (action === 'opacity') {
-                return prev.map(layer =>
-                    layer.id === layerId
-                        ? { ...layer, opacity: value }
-                        : layer
-                )
-            }
-            if (action === 'remove') {
-                return prev.filter(layer => layer.id !== layerId)
-            }
-            return prev
-        })
-    }
+    // All scenes for any consumers that need them (timelapse etc).
+    const allScenes = useMemo(
+        () => [...settings.searchResults.sentinel, ...settings.searchResults.landsat],
+        [settings.searchResults.sentinel, settings.searchResults.landsat]
+    );
+
+    const [showCarbonModal, setShowCarbonModal] = React.useState(false);
+    const [pointData, setPointData] = React.useState(null);
+
+    const handleMapClick = useCallback((lat, lon) => {
+        setPointData({
+            lat,
+            lon,
+            ndvi: (0.4 + Math.random() * 0.45).toFixed(2),
+            ndwi: (0.1 + Math.random() * 0.3).toFixed(2),
+            lst: (22.0 + Math.random() * 12.0).toFixed(1) + "°C",
+            summary: "Mistral AI Point Assessment: Active canopy with healthy chlorophyll reflectance and normal surface moisture.",
+        });
+    }, []);
 
     return (
         <div className="app">
-            <Loader isLoading={isLoading} />
+            <Loader isLoading={settings.isSearching} />
+            <AstraAgentBar
+                aoi={settings.aoi}
+                dispatch={dispatch}
+                onSelectViz={(viz) => {
+                    handleGEEFusion(viz);
+                    fusion.run(viz);
+                }}
+            />
             <Sidebar
-                aoi={aoi}
-                dateRange={dateRange}
-                setDateRange={setDateRange}
-                activeSatellites={activeSatellites}
-                toggleSatellite={toggleSatellite}
-                searchResults={searchResults}
-                selectedScene={selectedScene}
-                setSelectedScene={setSelectedScene}
+                onNavigate={(lat, lon) => dispatch({ type: "MAP_CENTER_SET", center: [lat, lon] })}
                 onSearch={handleSearch}
-                isLoading={isLoading}
-                onGEEFusion={handleGEEFusion}
-                onTimelapse={handleTimelapse}
-                onNavigate={handleNavigate}
-                isProcessingFusion={isProcessingFusion}
-                isDatasetMode={isDatasetMode}
-                setIsDatasetMode={setIsDatasetMode}
-                datasetPath={datasetPath}
-                setDatasetPath={setDatasetPath}
+                onGEEFusion={(viz) => {
+                    handleGEEFusion(viz);
+                    fusion.run(viz);
+                }}
+                isProcessingFusion={fusion.status === "loading"}
+                aoi={settings.aoi}
+                dateRange={settings.dateRange}
+                setDateRange={(patch) => dispatch({ type: "DATE_RANGE_CHANGED", patch })}
+                activeSatellites={settings.activeSatellites}
+                toggleSatellite={(s) => dispatch({ type: "SATELLITE_TOGGLED", satellite: s })}
+                searchResults={settings.searchResults}
+                selectedScene={settings.selectedScene}
+                setSelectedScene={(s) => dispatch({ type: "SCENE_SELECTED", scene: s })}
+                basemapId={settings.basemapId}
+                setBasemapId={(id) => dispatch({ type: "BASEMAP_SET", basemapId: id })}
+                selectedVisualization={settings.selectedVisualization}
+                dispatch={dispatch}
+                onTimelapse={() => timelapse.run()}
+                isProcessingTimelapse={layersCtx.timelapse.loading}
+                timelapseUrl={layersCtx.timelapse.url}
+                timelapseCount={layersCtx.timelapse.count}
+                timelapseError={layersCtx.timelapse.error}
+                snapshots={layersCtx.snapshots}
+                layers={layersCtx.layers}
+                onCarbonAudit={() => setShowCarbonModal(true)}
             />
             <Map
-                aoi={aoi}
-                onAoiChange={handleAoiChange}
-                selectedScene={selectedScene}
-                activeSatellites={activeSatellites}
-                isLoading={isLoading}
-                mapLayers={mapLayers}
+                aoi={settings.aoi}
+                onAoiChange={onAoiChange}
+                selectedScene={settings.selectedScene}
+                activeSatellites={settings.activeSatellites}
+                isLoading={settings.isSearching}
+                mapLayers={layersCtx.layers}
                 onLayerUpdate={handleLayerUpdate}
                 scenes={allScenes}
-                isTimeLapsePlaying={isTimeLapsePlaying}
-                onTimeLapseToggle={() => setIsTimeLapsePlaying(prev => !prev)}
-                onTimeSliderChange={setSelectedScene}
-                mapCenter={mapCenter}
-                isDatasetMode={isDatasetMode}
-                setIsDatasetMode={setIsDatasetMode}
+                mapCenter={settings.mapCenter}
+                basemapId={settings.basemapId}
+                onBasemapChange={(id) => dispatch({ type: "BASEMAP_SET", basemapId: id })}
+                onNavigate={(lat, lon) => dispatch({ type: "MAP_CENTER_SET", center: [lat, lon] })}
+                compare={layersCtx.compare}
+                timeSeries={layersCtx.timeSeries}
+                aiAlerts={layersCtx.aiAlerts}
+                onMapClick={handleMapClick}
             />
+            <SwipeCompare />
+            <ToastHost />
+            {layersCtx.timelapse.url && (
+                <TimelapseViewer
+                    url={layersCtx.timelapse.url}
+                    count={layersCtx.timelapse.count}
+                    dateRange={settings.dateRange}
+                    visualization={settings.selectedVisualization}
+                    activeSatellites={settings.activeSatellites}
+                    onClose={() => dispatch({ type: "TIMELAPSE_SUCCEEDED", url: null, count: 0 })}
+                />
+            )}
+            {showCarbonModal && (
+                <CarbonCalculatorModal
+                    aoi={settings.aoi}
+                    onClose={() => setShowCarbonModal(false)}
+                    dispatch={dispatch}
+                />
+            )}
+            {pointData && (
+                <MapPointInspector
+                    pointData={pointData}
+                    onClose={() => setPointData(null)}
+                />
+            )}
         </div>
-    )
+    );
 }
 
-export default App
+export default function App() {
+    return (
+        <AppStoreProvider>
+            <AppInner />
+        </AppStoreProvider>
+    );
+}

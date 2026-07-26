@@ -24,7 +24,7 @@ cd backend
 python -m venv venv               # Create venv if needed
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python main.py
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 ✅ Backend runs on `http://localhost:8000`
 
@@ -77,14 +77,25 @@ Follow the browser prompts to authorize your Earth Engine account.
 
 #### Step 5: Run Backend Server
 ```bash
-python main.py
+# Option A: With auto-reload (Development - file changes auto-reload)
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Option B: Without reload (Production - faster, more stable)
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+> **Important**: Always use `uvicorn main:app`, NOT `python main.py`
+> - `main` = the main.py file
+> - `app` = the FastAPI application instance
 
 Expected output:
 ```
-INFO:     Started server process [12345]
-INFO:     Uvicorn running on http://127.0.0.1:8000
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Application startup complete
 ```
+
+✅ Backend is ready at: **http://localhost:8000**  
+📖 API Docs: **http://localhost:8000/docs**
 
 ---
 

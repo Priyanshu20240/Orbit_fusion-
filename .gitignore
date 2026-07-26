@@ -214,3 +214,29 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ── Orbiter Fusion additions (M0 repo hygiene) ────────────────────────────
+# Committed build/venv artifacts to evict via `git rm -r --cached` on the host.
+# `dist/` and `venv/` are already covered above; these are the ones the stock
+# template misses.
+backend/venv_new/
+backend/a1/
+frontend/dist/
+node_modules/
+
+# Server-side fusion PNG outputs (StaticFiles mount removed in M5)
+backend/static/fusion/
+static/fusion/
+
+# GEE service-account credentials — NEVER commit
+ee-sa.json
+credentials
+*-service-account*.json
+
+# Frontend env files (only .env.example is tracked)
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+backend/.venv_orbit/
+frontend/test-results/
+test-results/
