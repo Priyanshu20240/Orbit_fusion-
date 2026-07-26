@@ -153,6 +153,7 @@ activemq-data/
 .venv
 env/
 venv/
+venv_new/
 ENV/
 env.bak/
 venv.bak/
@@ -214,3 +215,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Node.js dependencies
+node_modules/
+
+# Runtime-generated cache files
+backend/cache/
+
+# Large dataset / binary data files
+backend/datasets/
+
+# Runtime-generated fusion images
+backend/static/fusion/
+
+# Debug / development utility scripts
+backend/debug_*.py
+backend/check_url_readability.py
