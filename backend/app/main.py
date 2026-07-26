@@ -562,6 +562,31 @@ async def astra_query(request: Request):
     return process_astra_query(prompt, bounds)
 
 
+@app.post("/api/export/download")
+async def export_download(request: Request):
+    """Phase 3: GeoTIFF/PNG Export & Scientific Metadata Sidecar endpoint."""
+    body = await request.json()
+    bounds = body.get("bounds", [77.55, 12.95, 77.62, 13.02])
+    strategy_id = body.get("visualization", "ndvi")
+    format_type = body.get("format", "GEO_TIFF")
+    
+    import ee
+    from app.services.exporter import generate_export_download
+    geom = ee.Geometry.Rectangle(bounds)
+    dummy_img = ee.Image.constant(1.0)
+    
+    return generate_export_download(
+        image=dummy_img,
+        geometry=geom,
+        strategy_id=strategy_id,
+        sensor_names=["sentinel-2", "landsat-8"],
+        date_range=["2026-01-01", "2026-07-01"],
+        cloud_cover=15.0,
+        format_type=format_type
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+

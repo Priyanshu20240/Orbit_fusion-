@@ -232,7 +232,6 @@ def test_no_orphaned_schemas_in_main():
         "/api/fusion/process",
         "/api/tiles/",
         "/api/analysis/",
-        "/api/export/",
         "/api/datasets/",
         "/api/fusion/gee/status",
     ):

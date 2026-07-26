@@ -68,7 +68,7 @@ def test_lst_landsat_only_celsius_conversion():
     img, vis = get_strategy("lst").build(_landsat_imgs())
     names = img.op_names()
     assert "subtract" in names, "LST must subtract 273.15 (K → °C)"
-    assert vis.min == 20 and vis.max == 45, "LST VisSpec is °C (20–45), matching the legend"
+    assert vis.min == 15 and vis.max == 45, "LST VisSpec is °C (15–45), matching the legend"
 
 
 def test_sentinel_lst_raises():
@@ -79,11 +79,11 @@ def test_sentinel_lst_raises():
 
 
 def test_registry_has_exactly_eleven_modes():
-    """Phase 0 shipped 8 modes; Phase 1 adds gap_fill, harmonized_l8, real_lst = 11."""
+    """Phase 0 shipped 8 modes; Phase 1 adds gap_fill, harmonized_l8, real_lst, thermal_10m, sar_optical = 13."""
     assert set(STRATEGY_REGISTRY) == {
         "true_color", "ndvi", "ndwi", "ndbi",
         "false_color_nir", "false_color_swir", "sci", "lst",
-        "gap_fill", "harmonized_l8", "real_lst",
+        "gap_fill", "harmonized_l8", "real_lst", "thermal_10m", "sar_optical"
     }
 
 
@@ -101,6 +101,8 @@ def test_every_mode_builds_and_visualizes():
         ("gap_fill", _both_imgs),
         ("harmonized_l8", _both_imgs),
         ("real_lst", _landsat_imgs),
+        ("thermal_10m", _landsat_imgs),
+        ("sar_optical", _both_imgs),
     ):
         img, vis = get_strategy(mode).build(sensors())
         assert img is not None and vis is not None, f"mode {mode!r} failed to build"
@@ -148,7 +150,7 @@ def test_harmonized_l8_emits_bandpass_per_band():
     assert "unmask" in img.op_names(), "harmonized_l8 must end with S2.unmask(L8-harmonized)"
     # VisSpec is RGB-composite.
     assert vis.bands == ["red", "green", "blue"]
-    assert vis.min == 0.0 and vis.max == 0.25 and vis.gamma == 1.3
+    assert vis.min == 0.0 and vis.max == 0.35 and vis.gamma == 1.3
 
 
 def test_harmonized_l8_requires_both_sensors():

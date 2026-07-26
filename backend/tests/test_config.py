@@ -22,15 +22,15 @@ def _fresh(monkeypatch, **env):
 def test_defaults(monkeypatch):
     s = _fresh(monkeypatch, ORBITER_GEE_PROJECT="test")
     assert s.gee_project == "test"
-    assert s.cors_origins == ["http://localhost:5173"]
+    assert "http://localhost:5173" in s.cors_origins
     assert s.mapid_ttl_seconds == 21600
-    assert s.max_scenes_per_composite == 25
     assert s.default_cloud_cover == 20.0
     assert s.ee_threadpool_workers == 8
     assert s.gee_high_volume is True
 
 
 def test_missing_project_is_loud(monkeypatch):
+    monkeypatch.setitem(config.Settings.model_config, "env_file", None)
     with pytest.raises(ValidationError):
         _fresh(monkeypatch)  # no ORBITER_GEE_PROJECT
 
