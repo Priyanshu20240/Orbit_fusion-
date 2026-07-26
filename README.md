@@ -1,126 +1,114 @@
-# Orbiter Fusion Platform (ASTRAVISION) - Technical Documentation
+# 🛰️ Orbiter Fusion Platform (ASTRAVISION)
+> **Next-Generation Multi-Satellite Data Fusion & Autonomous AI Intelligence Platform**
 
-## 1. Project Overview
-**Orbiter Fusion** is a specialized multi-satellite data fusion dashboard. It integrates data from **Sentinel-2** (European Space Agency) and **Landsat-8/9** (NASA/USGS) to create superior fused imagery. 
-
-The core power of this application lies in its ability to **harmonize** data from different satellites with different resolutions (10m vs 30m) into a unified analysis ready for spectral computation (NDVI, Moisture, etc.).
-
-## 2. Technical Stack
-*   **Backend**: Python, FastAPI (High-performance Async API)
-*   **Processing Engine**: Google Earth Engine (GEE) Python API
-*   **Frontend**: React.js, Leaflet (Map visualization), TailwindCSS
-*   **Data Handling**: NumPy, Rasterio, SciPy (for local tensor operations)
+[![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React + Vite](https://img.shields.io/badge/React_Vite-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://vitejs.dev/)
+[![Google Earth Engine](https://img.shields.io/badge/Google_Earth_Engine-4285F4?style=for-the-badge&logo=googleearth&logoColor=white)](https://earthengine.google.com/)
+[![Mistral AI](https://img.shields.io/badge/Mistral_AI-FF7000?style=for-the-badge&logo=mistral&logoColor=white)](https://mistral.ai/)
 
 ---
 
-## 3. Core Logic & Mathematical Explanations
+## 🌟 Executive Overview
+**Orbiter Fusion** is a state-of-the-art Earth Observation intelligence platform designed to eliminate satellite telemetry trade-offs. By fusing **Sentinel-2** (ESA 10m Optical), **Landsat 8/9** (NASA/USGS 30m/100m Thermal), and **Sentinel-1** (ESA C-Band SAR Radar), Orbiter Fusion delivers **gap-free, cloud-penetrating, high-resolution multi-spectral analytics** in real-time.
 
-This section explains the "Math" and logic requested, specifically found in `backend/services/gee_fusion_service.py`.
+---
 
-### 3.1. The "Master-Slave" Fusion Logic
-The system addresses the challenge of merging **10-meter** resolution (Sentinel) with **30-meter** resolution (Landsat).
+## 🚀 Key Features & Innovations
 
-*   **Logic**: We treat Sentinel-2 as the **Master** (Reference) and Landsat as the **Slave**.
-*   **Math**: The resolution ratio is `30m / 10m = 3`.
-    *   This means 1 Landsat pixel covers the same area as a **3x3 grid** of Sentinel pixels.
-    *   **Resampling**: To fuse them, we "upsample" Landsat. We split every single 30m Landsat pixel into 9 identical 10m pixels (Nearest Neighbor) or smooth them (Bilinear Interpolation) to align perfectly with the Sentinel grid.
+### 1. 🛰️ Multi-Sensor Gap-Fill Fusion Engine
+* **Spatial & Spectral Harmonization**: Upsamples 30m Landsat-8/9 bands to align with 10m Sentinel-2 grids using HLS (Harmonized Landsat-Sentinel) conventions.
+* **Server-Side Compositing**: Computes cloud-masked, multi-sensor tile streams live via Google Earth Engine.
 
-### 3.2. Spectral Normalization (The Scaling Math)
-Satellite data comes in "Digital Numbers" (DN) or "Surface Reflectance" (SR) which have different scales. We must normalize them before fusion.
+### 2. 💡 13 Multi-Spectral & Super-Resolution Modes
+Includes academic scientific provenance badges on every index card:
 
-*   **Sentinel-2 Usage**: 
-    `Reflectance = Band_Value * 0.0001`
-    (Sentinel values typically range 0-10000, so this scales them to 0-1.0 float).
+| Mode | Type | Provenance | Academic Reference / Model |
+| :--- | :--- | :--- | :--- |
+| **True Color (Natural RGB)** | Optical Composite | 🛰️ Measured | Reflectance stretched $0.0 - 0.35$ |
+| **Gap-Fill Fusion** | Harmonized S2+L8 | 📐 Modeled | Claverie et al. (2018) HLS |
+| **NDVI (Vegetation Index)** | Health & Canopy | 🛰️ Measured | Rouse et al. (1973) $[0.0 - 0.8]$ |
+| **NDWI (Water Index)** | Hydro Surface | 🛰️ Measured | McFeeters (1996) $[-0.3 - 0.4]$ |
+| **NDBI (Built-up Index)** | Urban Density | 🛰️ Measured | Zha et al. (2003) |
+| **NIR Composite** | Agriculture Vigor | 🛰️ Measured | Standard False-Color Infrared |
+| **SWIR Composite** | Soil Moisture | 🛰️ Measured | Shortwave Infrared Water Stress |
+| **SCI (Soil Composition)** | Geology & Minerals | 🛰️ Measured | Mineral Absorption Spectroscopy |
+| **LST (Land Temp - Raw)** | Thermal IR | 🛰️ Measured | Landsat-8 TIRS Band 10 |
+| **RealLST (Emissivity Adj.)** | Kelvin-to-Celsius | 📐 Modeled | Sobrino et al. (2004) split-window |
+| **Thermal 10m Super-Res** | Downscaled Temp | 📐 Modeled | Agam et al. (2007) TsHARP 10m |
+| **SAR Radar (C-Band)** | Cloud-Penetrating | 🧪 Demo | Sentinel-1 VV/VH backscatter |
 
-*   **Landsat Usage**:
-    `Reflectance = (Band_Value * 0.0000275) - 0.2`
-    (Landsat Collection 2 uses this specific linear equation to convert packed integer values to surface reflectance).
+### 3. 🤖 Autonomous ASTRA-AI Agent
+* **Natural Language Queries**: Powered by **Mistral AI Engine** (`mistral-small-latest`).
+* **Automated Risk Scanning**: Scans targets for illegal deforestation, wildfire risk, water reservoir depletion, and urban heat islands.
+* **GPS Alert Layer**: Renders interactive warning pins and anomaly polygon overlays on the map.
 
-### 3.3. Fusion Algorithms
-Current implementation uses a **Weighted Average** approach in `fuse_collections_server_side`:
+### 4. 📈 ESG Carbon & Biomass Sequestration Accounting
+* **Biomass Density Calculator**: Estimates dry biomass tonnage ($T/\text{ha}$) from multi-spectral NDVI canopy density.
+* **Carbon Credit Valuation**: Computes total carbon stock, $\text{CO}_2\text{e}$ sequestration equivalent, and monetary credit valuation ($25/\text{Ton}$).
 
-**Code Snippet:**
-```python
-fused_rgb = s2_rgb.add(l8_rgb).divide(2)
+### 5. 📑 Executive PDF & Interactive Swipe Compare
+* **↔️ Swipe Compare Slider**: Drag a vertical split-screen divider to compare satellite layers side-by-side.
+* **📄 1-Click Executive PDF**: Generates printable environmental intelligence reports with verified telemetry tables.
+
+---
+
+## 🏗️ Architecture & Tech Stack
+
+```mermaid
+graph TD
+    Client["💻 React + Vite Frontend (Leaflet SPA)"]
+    Vercel["⚡ Vercel Edge CDN"] --> Client
+    Client -->|REST API| FastAPI["🐍 FastAPI Python Backend (Render / Docker)"]
+    FastAPI --> GEE["🌍 Google Earth Engine Python API"]
+    FastAPI --> Mistral["🤖 Mistral AI API"]
 ```
-**Explanation**:
-*   After alignment, we take the Sentinel pixel value ($S$) and Landsat pixel value ($L$) at the exact same coordinate.
-*   **Formula**: $Fusion = \frac{S + L}{2}$
-*   **Benefit**: This reduces "random noise" (sensor grain) because noise is random, but the signal (the ground) is constant. Averaging two sensors improves the Signal-to-Noise Ratio (SNR).
 
-### 3.4. NDVI (Normalized Difference Vegetation Index)
-The code calculates vegetation health using the classic formula:
-
-**Formula**: 
-$$NDVI = \frac{NIR - Red}{NIR + Red}$$
-
-**Code Implementation**:
-*   **Sentinel**: Uses Band 8 (NIR) and Band 4 (Red).
-*   **Landsat**: Uses Band 5 (NIR) and Band 4 (Red).
-*   **Fused NDVI**: We calculate NDVI for *both* significantly, then average the result, giving a more robust vegetation reading than any single satellite could provide.
-
-### 3.5. Geographic Windowing (Degree-to-Meter Math)
-In `create_geo_window`, the code calculates exactly how much of the earth to grab for a 256x256 pixel image.
-
-**The Math**:
-1.  **Target**: 256 pixels * 10 meters/pixel = **2560 meters** total width.
-2.  **Latitude Correction**: The earth is a sphere, so 1 degree of Longitude shrinks as you move from Equator to Poles.
-3.  **Formula**:
-    $$MetersPerDegLon = 111,320 \times \cos(Latitude_{radians})$$
-
-**Why?**: Without this `cos(lat)` correction, the images would look "squashed" or "stretched" depending on if you were in India vs. Europe. This ensures square pixels.
+* **Frontend**: React 18, Vite, Leaflet, Glassmorphism CSS design system.
+* **Backend**: Python 3.11, FastAPI, Uvicorn, Pydantic v2.
+* **Engine**: Google Earth Engine Python API, Mistral AI REST API.
 
 ---
 
-## 4. Codebase Tour & Snippet Explanation
+## 📦 Quickstart & Installation
 
-### Backend (`backend/`)
-
-#### `main.py`
-This is the **Entry Point**. It defines the API URL routes.
-*   **`@app.post("/api/fusion/gee-harmonize")`**: The main brain. It receives a bounding box, dates, and returns the fused image URL. It handles the error logic (e.g., if clouds cover the area).
-*   **`@app.get("/api/fusion/{fusion_id}/tiles/...")`**: This is a **Tile Server**. It cuts the huge satellite image into tiny squares (tiles) that the map frontend needs to load smoothly as you zoom in/out.
-
-#### `services/gee_fusion_service.py`
-The "Engine Room".
-*   **`initialize_gee()`**: Authenticates with Google servers.
-*   **`get_sentinel_image` / `get_landsat_image`**: Filters the massive global archive to find just the images for your specific location and dates, filtering out cloudy days.
-*   **`fuse_collections_server_side`**: 
-    *   **Input**: Two raw images (Sentinel, Landsat).
-    *   **Action**: Performs the Math described in Section 3 (Scaling, Matching, Averaging).
-    *   **Output**: A single "Fused" image ready for display.
-
-### Frontend (`frontend/`)
-
-#### `src/App.jsx`
-The **Controller**.
-*   Manages State: `aoi` (Area of Interest), `dateRange`, `activeSatellites`.
-*   **`handleGEEFusion`**: When you click "Merge Satellite", this function bundles your map selection and sends it to the backend API.
-*   **`handleLayerUpdate`**: Updates the map when the backend replies with a new image.
-
-#### `src/components/Sidebar.jsx`
-The **Interface**.
-*   Contains the buttons "Merge Satellite", "Vegetation (NDVI)", "Moisture".
-*   Passes the user's choice (e.g., "ndvi") up to `App.jsx` to trigger the correct fusion mode.
+### Option A: 1-Command Docker Launch (Recommended)
+```bash
+docker compose up --build
+```
+Access the application at **`http://localhost:5173`**!
 
 ---
 
-## 5. How to Run
+### Option B: Manual Local Setup
 
-1.  **Backend**:
-    ```bash
-    cd backend
-    # Activate virtual environment
-    venv\Scripts\activate
-    # Run server
-    python start.py  # or uvicorn main:app --reload
-    ```
+#### 1. Backend Setup
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate      # On Windows
+pip install -r requirements.txt
 
-2.  **Frontend**:
-    ```bash
-    cd frontend
-    npm run dev
-    ```
+# Create .env file with your GEE Project and Mistral API Key:
+# ORBITER_GEE_PROJECT=your-gee-project-id
+# MISTRAL_API_KEY=your-mistral-api-key
 
-3.  **Access**:
-    Open `http://localhost:5173` in your browser.
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+#### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 🧪 Testing & Verification
+
+Run end-to-end browser tests via Playwright:
+```bash
+cd frontend
+npx playwright test
+```
