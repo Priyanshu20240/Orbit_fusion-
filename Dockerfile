@@ -22,6 +22,6 @@ WORKDIR /app/backend
 EXPOSE 8000
 
 ENV PYTHONUNBUFFERED=1
-ENV ORBITER_GEE_PROJECT=compact-arc-482620-r8
+ENV ORBITER_GEE_PROJECT=${ORBITER_GEE_PROJECT:-your-gee-project-id}
 
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -57,7 +57,7 @@ Access the app at **`http://localhost:5173`**!
 
 4. Create environment file `backend/.env`:
    ```env
-   ORBITER_GEE_PROJECT=compact-arc-482620-r8
+   ORBITER_GEE_PROJECT=your-gee-project-id
    MISTRAL_API_KEY=your-mistral-api-key
    ORBITER_CORS_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
    ```
