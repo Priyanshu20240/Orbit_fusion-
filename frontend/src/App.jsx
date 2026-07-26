@@ -20,7 +20,6 @@ import AstraAgentBar from "./components/AstraAgentBar.jsx";
 import CarbonCalculatorModal from "./components/CarbonCalculatorModal.jsx";
 import MapPointInspector from "./components/MapPointInspector.jsx";
 import SwipeCompare from "./components/SwipeCompare.jsx";
-import QuickActionsToolbar from "./components/QuickActionsToolbar.jsx";
 import { AppStoreProvider, useSettings, useLayers, useDispatch, useAoiActions } from "./state/AppStore.jsx";
 import { request, humanize } from "./api/client.js";
 import { useFusion } from "./hooks/useFusion.js";
